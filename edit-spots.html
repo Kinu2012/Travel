@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>観光地選択</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>観光地を選択</h1>
+                <p class="subtitle" id="categorySubtitle">おすすめスポットから選択するか、自分で追加してください</p>
+            </div>
+
+            <div class="spot-selection-layout">
+                <!-- 左側: おすすめスポット -->
+                <div class="recommended-section">
+                    <h3 id="recommendedTitle">おすすめスポット</h3>
+                    <div class="spots-grid" id="recommendedSpots">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+
+                <!-- 右側: カスタムスポット追加 & 選択済み -->
+                <div class="sidebar">
+                    <!-- カスタムスポット追加 -->
+                    <div class="custom-spot-card">
+                        <h3>自分でスポットを追加</h3>
+                        <div class="custom-input">
+                            <input type="text" id="spotName" placeholder="スポット名を入力" maxlength="50">
+                            <input type="text" id="spotAddress" placeholder="住所を入力（任意）" maxlength="100">
+                            <textarea id="spotDescription" placeholder="説明を入力（任意）" maxlength="200" rows="2"></textarea>
+                            <button class="nav-btn add-btn" onclick="addCustomSpot()">スポットを追加</button>
+                        </div>
+                    </div>
+
+                    <!-- 選択済みスポット -->
+                    <div class="selected-spots-card">
+                        <h3>選択済みスポット <span class="count-badge" id="selectedCount">0</span></h3>
+                        <div class="selected-spots-list" id="selectedSpotsList">
+                            <div class="no-selection">まだ選択されていません</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="nav-btn" onclick="location.href='edit-category.html'">
+                    <span>←</span> 戻る
+                </button>
+                <button class="nav-btn next-btn" onclick="proceedToPreview()" id="nextBtn" disabled>
+                    確認へ進む <span>→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // スポットデータ（実際にはJSONファイルから読み込む）
+        const spotsData = {
+            "categories": {
+                "nature": {
+                    "name": "自然・景色",
+                    "spots": [
+                        {
+                            "id": "nature_1",
+                            "name": "富士山五合目",
+                            "address": "山梨県南都留郡鳴沢村",
+                            "description": "日本一の山、富士山の中腹にある絶景スポット",
+                            "image": "🏔️",
+                            "tags": ["山", "絶景", "登山"]
+                        },
+                        {
+                            "id": "nature_2", 
+                            "name": "兼六園",
+                            "address": "石川県金沢市兼六町",
+                            "description": "日本三名園の一つで四季折々の美しさを楽しめる",
+                            "image": "🌳",
+                            "tags": ["庭園", "日本庭園", "金沢"]
+                        },
+                        {
+                            "id": "nature_3",
+                            "name": "阿蘇山",
+                            "address": "熊本県阿蘇市",
+                            "description": "世界有数のカルデラを持つ活火山",
+                            "image": "🌋",
+                            "tags": ["火山", "カルデラ", "熊本"]
+                        },
+                        {
+                            "id": "nature_4",
+                            "name": "知床五湖",
+                            "address": "北海道斜里郡斜里町",
+                            "description": "世界遺産の知床にある神秘的な湖群",
+                            "image": "🏞️",
+                            "tags": ["世界遺産", "湖", "北海道"]
+                        },
+                        {
+                            "id": "nature_5",
+                            "name": "白川郷",
+                            "address": "岐阜県大野郡白川村",
+                            "description": "合掌造りの集落が美しい世界遺産",
+                            "image": "🏡",
+                            "tags": ["世界遺産", "合掌造り", "岐阜"]
+                        },
+                        {
+                            "id": "nature_6",
+                            "name": "屋久島",
+                            "address": "鹿児島県熊毛郡屋久島町",
+                            "description": "縄文杉がある神秘の島",
+                            "image": "🌲",
+                            "tags": ["世界遺産", "屋久杉", "鹿児島"]
+                        }
+                    ]
+                }
+                // 他のカテゴリーも同様に...
+            }
+        };
+
+        let selectedSpots = [];
+
+        function loadSpotsData() {
+            console.log('スポットデータ読み込み成功:', spotsData);
+            const category = localStorage.getItem('selectedCategory') || 'nature';
+            displayRecommendedSpots(category);
+        }
+
+        function displayRecommendedSpots(category) {
+            const container = document.getElementById('recommendedSpots');
+            const categoryData = spotsData.categories[category];
+            
+            if (!categoryData) {
+                container.innerHTML = '<div class="error">カテゴリーデータが見つかりません</div>';
+                return;
+            }
+
+            // サブタイトルとタイトルを更新
+            document.getElementById('categorySubtitle').textContent = 
+                `${categoryData.name}のスポットから選択するか、自分で追加してください`;
+            document.getElementById('recommendedTitle').textContent = 
+                `${categoryData.name}のおすすめスポット`;
+
+            const spots = categoryData.spots || [];
+            
+            if (spots.length === 0) {
+                container.innerHTML = '<div class="no-data">表示できるスポットがありません</div>';
+                return;
+            }
+
+            container.innerHTML = spots.map(spot => `
+                <div class="spot-card ${isSpotSelected(spot.id) ? 'selected' : ''}" 
+                     onclick="toggleSpot('${spot.id}', '${spot.name}', '${spot.address}', '${spot.description}', '${spot.image}')">
+                    <div class="spot-card-header">
+                        <div class="spot-image">${spot.image}</div>
+                        <div class="spot-check">${isSpotSelected(spot.id) ? '✓' : '+'}</div>
+                    </div>
+                    <div class="spot-card-body">
+                        <h4>${spot.name}</h4>
+                        <p class="spot-address">${spot.address}</p>
+                        <p class="spot-description">${spot.description}</p>
+                        <div class="spot-tags">
+                            ${(spot.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function isSpotSelected(spotId) {
+            return selectedSpots.some(spot => spot.id === spotId);
+        }
+
+        function toggleSpot(id, name, address, description, image) {
+            const index = selectedSpots.findIndex(spot => spot.id === id);
+            
+            if (index === -1) {
+                selectedSpots.push({ 
+                    id, 
+                    name, 
+                    address, 
+                    description,
+                    image,
+                    isCustom: false 
+                });
+            } else {
+                selectedSpots.splice(index, 1);
+            }
+            
+            updateSelectedList();
+            updateNextButton();
+            // 選択状態を反映するために再表示
+            const category = localStorage.getItem('selectedCategory') || 'nature';
+            displayRecommendedSpots(category);
+        }
+
+        function addCustomSpot() {
+            const nameInput = document.getElementById('spotName');
+            const addressInput = document.getElementById('spotAddress');
+            const descriptionInput = document.getElementById('spotDescription');
+            
+            const name = nameInput.value.trim();
+            const address = addressInput.value.trim();
+            const description = descriptionInput.value.trim();
+            
+            if (!name) {
+                alert('スポット名を入力してください');
+                return;
+            }
+            
+            if (selectedSpots.find(spot => spot.name === name)) {
+                alert('既に追加済みのスポットです');
+                return;
+            }
+            
+            const customSpot = {
+                id: 'custom_' + Date.now(),
+                name: name,
+                address: address,
+                description: description,
+                image: '📍',
+                isCustom: true
+            };
+            
+            selectedSpots.push(customSpot);
+            
+            // 入力フィールドをクリア
+            nameInput.value = '';
+            addressInput.value = '';
+            descriptionInput.value = '';
+            
+            updateSelectedList();
+            updateNextButton();
+        }
+
+        function updateSelectedList() {
+            const container = document.getElementById('selectedSpotsList');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            selectedCount.textContent = selectedSpots.length;
+            
+            if (selectedSpots.length === 0) {
+                container.innerHTML = '<div class="no-selection">まだ選択されていません</div>';
+                return;
+            }
+            
+            container.innerHTML = selectedSpots.map(spot => `
+                <div class="selected-item">
+                    <div class="selected-item-icon">${spot.image}</div>
+                    <div class="selected-item-info">
+                        <div class="selected-item-name">${spot.name}</div>
+                        ${spot.address ? `<div class="selected-item-address">${spot.address}</div>` : ''}
+                        ${spot.isCustom ? '<div class="custom-badge">カスタム</div>' : ''}
+                    </div>
+                    <button class="remove-btn" onclick="removeSpot('${spot.id}')" title="削除">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeSpot(spotId) {
+            selectedSpots = selectedSpots.filter(spot => spot.id !== spotId);
+            updateSelectedList();
+            updateNextButton();
+            
+            // JSONスポットの場合は表示も更新
+            const category = localStorage.getItem('selectedCategory') || 'nature';
+            displayRecommendedSpots(category);
+        }
+
+        function updateNextButton() {
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = selectedSpots.length === 0;
+        }
+
+        function proceedToPreview() {
+            if (selectedSpots.length === 0) {
+                alert('少なくとも1つのスポットを選択してください');
+                return;
+            }
+            
+            localStorage.setItem('selectedSpots', JSON.stringify(selectedSpots));
+            location.href = 'edit-preview.html';
+        }
+
+        // ページ読み込み時にデータをロード
+        document.addEventListener('DOMContentLoaded', loadSpotsData);
+    </script>
+</body>
+</html>

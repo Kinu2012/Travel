@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行アンケート</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container" id="questionnaire-screen">
+        <div class="screen active">
+            <!-- ヘッダー -->
+            <div class="questionnaire-header">
+                <h1>旅行アンケート</h1>
+                <p class="subtitle">次の旅行を計画するために、<br>いくつかの簡単な質問に答えてください！</p>
+            </div>
+
+            <!-- 進捗表示 -->
+            <div class="progress-section">
+                <div class="progress-text" id="progress-text">質問１／５</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- 質問フォーム -->
+            <form id="questionnaire-form" action="proposal.html" method="GET">
+                <!-- 質問1 -->
+                <div class="question-area active" data-question="1">
+                    <h2 class="question-text">今の気分はどんな感じ？</h2>
+                    
+                    <div class="options-grid">
+                        <div class="option-row">
+                            <div class="mood-option">
+                                <input type="radio" id="mood1" name="mood" value="excited" required>
+                                <label for="mood1" class="mood-label">
+                                    <span class="mood-emoji">🎉</span>
+                                    <span class="mood-text">ワクワクしている</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="mood2" name="mood" value="relaxed" required>
+                                <label for="mood2" class="mood-label">
+                                    <span class="mood-emoji">😌</span>
+                                    <span class="mood-text">のんびりしている</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="option-row">
+                            <div class="mood-option">
+                                <input type="radio" id="mood3" name="mood" value="adventurous" required>
+                                <label for="mood3" class="mood-label">
+                                    <span class="mood-emoji">🏔️</span>
+                                    <span class="mood-text">冒険したい</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="mood4" name="mood" value="chilled" required>
+                                <label for="mood4" class="mood-label">
+                                    <span class="mood-emoji">🍵</span>
+                                    <span class="mood-text">まったりしたい</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 質問2 -->
+                <div class="question-area" data-question="2">
+                    <h2 class="question-text">旅行の目的は何ですか？</h2>
+                    
+                    <div class="options-grid">
+                        <div class="option-row">
+                            <div class="mood-option">
+                                <input type="radio" id="purpose1" name="purpose" value="relax" required>
+                                <label for="purpose1" class="mood-label">
+                                    <span class="mood-emoji">🏖️</span>
+                                    <span class="mood-text">リラックス</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="purpose2" name="purpose" value="adventure" required>
+                                <label for="purpose2" class="mood-label">
+                                    <span class="mood-emoji">🧗</span>
+                                    <span class="mood-text">アドベンチャー</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="option-row">
+                            <div class="mood-option">
+                                <input type="radio" id="purpose3" name="purpose" value="culture" required>
+                                <label for="purpose3" class="mood-label">
+                                    <span class="mood-emoji">🏯</span>
+                                    <span class="mood-text">文化体験</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="purpose4" name="purpose" value="gourmet" required>
+                                <label for="purpose4" class="mood-label">
+                                    <span class="mood-emoji">🍣</span>
+                                    <span class="mood-text">グルメ</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 質問3 -->
+                <div class="question-area" data-question="3">
+                    <h2 class="question-text">旅行の予算は？</h2>
+                    
+                    <div class="options-grid">
+                        <div class="option-row single-row">
+                            <div class="mood-option">
+                                <input type="radio" id="budget1" name="budget" value="low" required>
+                                <label for="budget1" class="mood-label">
+                                    <span class="mood-emoji">💰</span>
+                                    <span class="mood-text">節約したい<br><small>（3万円以下）</small></span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="budget2" name="budget" value="medium" required>
+                                <label for="budget2" class="mood-label">
+                                    <span class="mood-emoji">💵</span>
+                                    <span class="mood-text">普通<br><small>（3〜8万円）</small></span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="budget3" name="budget" value="high" required>
+                                <label for="budget3" class="mood-label">
+                                    <span class="mood-emoji">💎</span>
+                                    <span class="mood-text">贅沢<br><small>（8万円以上）</small></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 質問4 -->
+                <div class="question-area" data-question="4">
+                    <h2 class="question-text">旅行期間は？</h2>
+                    
+                    <div class="options-grid">
+                        <div class="option-row single-row">
+                            <div class="mood-option">
+                                <input type="radio" id="duration1" name="duration" value="short" required>
+                                <label for="duration1" class="mood-label">
+                                    <span class="mood-emoji">🌅</span>
+                                    <span class="mood-text">日帰り〜1泊</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="duration2" name="duration" value="medium" required>
+                                <label for="duration2" class="mood-label">
+                                    <span class="mood-emoji">🏨</span>
+                                    <span class="mood-text">2〜3泊</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="duration3" name="duration" value="long" required>
+                                <label for="duration3" class="mood-label">
+                                    <span class="mood-emoji">✈️</span>
+                                    <span class="mood-text">4泊以上</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 質問5 -->
+                <div class="question-area" data-question="5">
+                    <h2 class="question-text">同行者は？</h2>
+                    
+                    <div class="options-grid">
+                        <div class="option-row single-row">
+                            <div class="mood-option">
+                                <input type="radio" id="companion1" name="companion" value="solo" required>
+                                <label for="companion1" class="mood-label">
+                                    <span class="mood-emoji">🙋</span>
+                                    <span class="mood-text">一人旅</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="companion2" name="companion" value="couple" required>
+                                <label for="companion2" class="mood-label">
+                                    <span class="mood-emoji">👫</span>
+                                    <span class="mood-text">カップル</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="companion3" name="companion" value="family" required>
+                                <label for="companion3" class="mood-label">
+                                    <span class="mood-emoji">👨‍👩‍👧‍👦</span>
+                                    <span class="mood-text">家族</span>
+                                </label>
+                            </div>
+                            <div class="mood-option">
+                                <input type="radio" id="companion4" name="companion" value="friends" required>
+                                <label for="companion4" class="mood-label">
+                                    <span class="mood-emoji">👥</span>
+                                    <span class="mood-text">友人</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ナビゲーションボタン -->
+                <div class="navigation-buttons">
+                    <button type="button" class="nav-btn prev-btn" id="prev-btn" disabled>
+                        <span>←</span> 前へ
+                    </button>
+                    <button type="button" class="nav-btn next-btn" id="next-btn">
+                        次へ <span>→</span>
+                    </button>
+                    <button type="submit" class="nav-btn submit-btn" id="submit-btn" style="display: none;">
+                        プランを提案する <span>✨</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ページ読み込み後に実行
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ページ読み込み完了');
+            
+            const questions = document.querySelectorAll('.question-area');
+            const progressText = document.getElementById('progress-text');
+            const progressFill = document.getElementById('progress-fill');
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            let currentQuestion = 0;
+            const totalQuestions = questions.length;
+            
+            console.log('要素数:', {
+                questions: questions.length,
+                nextBtn: !!nextBtn,
+                prevBtn: !!prevBtn
+            });
+            
+            // イベントリスナー
+            nextBtn.addEventListener('click', nextQuestion);
+            prevBtn.addEventListener('click', prevQuestion);
+            
+            // オプション選択の処理
+            document.querySelectorAll('.mood-option input').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log('選択変更:', this.value);
+                    updateNavigation();
+                });
+            });
+            
+            // 質問表示関数
+            function showQuestion(index) {
+                console.log('質問表示:', index);
+                questions.forEach((q, i) => {
+                    q.classList.toggle('active', i === index);
+                });
+                
+                // 進捗更新
+                const progressPercent = ((index + 1) / totalQuestions) * 100;
+                progressText.textContent = `質問${index + 1}／${totalQuestions}`;
+                progressFill.style.width = `${progressPercent}%`;
+                
+                // ナビゲーション更新
+                updateNavigation();
+            }
+            
+            // ナビゲーション更新
+            function updateNavigation() {
+                const currentQuestionElement = questions[currentQuestion];
+                const isAnswered = currentQuestionElement.querySelector('input:checked');
+                
+                console.log('ナビゲーション更新:', {
+                    currentQuestion: currentQuestion,
+                    isAnswered: !!isAnswered
+                });
+                
+                // 前へボタン
+                prevBtn.disabled = currentQuestion === 0;
+                
+                // 次へ/送信ボタン
+                if (currentQuestion === totalQuestions - 1) {
+                    nextBtn.style.display = 'none';
+                    submitBtn.style.display = isAnswered ? 'flex' : 'none';
+                } else {
+                    nextBtn.style.display = 'flex';
+                    submitBtn.style.display = 'none';
+                    nextBtn.disabled = !isAnswered;
+                    nextBtn.style.opacity = isAnswered ? '1' : '0.7';
+                    nextBtn.style.cursor = isAnswered ? 'pointer' : 'not-allowed';
+                }
+            }
+            
+            function nextQuestion() {
+                console.log('次へボタンクリック');
+                const currentQuestionElement = questions[currentQuestion];
+                const isAnswered = currentQuestionElement.querySelector('input:checked');
+                
+                if (!isAnswered) {
+                    alert('選択してください！');
+                    return;
+                }
+                
+                if (currentQuestion < totalQuestions - 1) {
+                    currentQuestion++;
+                    showQuestion(currentQuestion);
+                }
+            }
+            
+            function prevQuestion() {
+                console.log('前へボタンクリック');
+                if (currentQuestion > 0) {
+                    currentQuestion--;
+                    showQuestion(currentQuestion);
+                }
+            }
+            
+            // 初期表示
+            showQuestion(0);
+        });
+    </script>
+</body>
+</html>

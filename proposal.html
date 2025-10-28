@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行プラン提案</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>あなたにおすすめの旅行プラン</h1>
+                <p class="subtitle">回答内容をもとに最適なプランを提案します</p>
+            </div>
+            <main>
+                <div class="plans-container" id="plans-container">
+                    <!-- JavaScriptでプランを動的に生成 -->
+                </div>
+                <div class="navigation-buttons" style="justify-content: center; margin-top: 30px;">
+                    <button class="nav-btn" onclick="location.href='index.html'">
+                        🏠 トップに戻る
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // URLパラメータから回答を取得してプランを生成
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const answers = {
+                mood: urlParams.get('mood'),
+                purpose: urlParams.get('purpose'),
+                budget: urlParams.get('budget'),
+                duration: urlParams.get('duration'),
+                companion: urlParams.get('companion')
+            };
+            
+            generatePlans(answers);
+        });
+    </script>
+</body>
+</html>
