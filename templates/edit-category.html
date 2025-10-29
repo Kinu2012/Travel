@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カテゴリー選択</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>カテゴリー選択</h1>
+                <p class="subtitle">興味のあるカテゴリーを選択してください</p>
+            </div>
+
+            <div class="categories-grid">
+                <div class="category-card" onclick="selectCategory('nature')">
+                    <div class="category-icon">🏞️</div>
+                    <h3>自然・景色</h3>
+                    <p>山、海、公園など自然を楽しむ</p>
+                </div>
+                
+                <div class="category-card" onclick="selectCategory('culture')">
+                    <div class="category-icon">🏯</div>
+                    <h3>文化・歴史</h3>
+                    <p>寺社、博物館、歴史的建造物</p>
+                </div>
+                
+                <div class="category-card" onclick="selectCategory('gourmet')">
+                    <div class="category-icon">🍣</div>
+                    <h3>グルメ</h3>
+                    <p>レストラン、カフェ、市場</p>
+                </div>
+                
+                <div class="category-card" onclick="selectCategory('shopping')">
+                    <div class="category-icon">🛍️</div>
+                    <h3>ショッピング</h3>
+                    <p>商業施設、ショッピングモール</p>
+                </div>
+                
+                <div class="category-card" onclick="selectCategory('activity')">
+                    <div class="category-icon">🎯</div>
+                    <h3>アクティビティ</h3>
+                    <p>体験、スポーツ、レジャー</p>
+                </div>
+                
+                <div class="category-card" onclick="selectCategory('relax')">
+                    <div class="category-icon">♨️</div>
+                    <h3>リラクゼーション</h3>
+                    <p>温泉、スパ、癒しスポット</p>
+                </div>
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="nav-btn" onclick="location.href='edit-menu.html'">
+                    <span>←</span> 戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectCategory(category) {
+            // カテゴリーをローカルストレージに保存
+            localStorage.setItem('selectedCategory', category);
+            // 観光地選択ページへ遷移
+            location.href = 'edit-spots.html';
+        }
+    </script>
+</body>
+</html>

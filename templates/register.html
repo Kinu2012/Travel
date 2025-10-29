@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規登録</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .register-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .register-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .logo p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #ecf0f1;
+            z-index: 1;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 50%;
+            height: 3px;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            z-index: 2;
+            transition: width 0.5s ease;
+        }
+        
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #7f8c8d;
+            z-index: 3;
+            position: relative;
+        }
+        
+        .step.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .step.completed {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .form-step {
+            display: none;
+        }
+        
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group input {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+        
+        .checkbox-group label {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .checkbox-group a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .checkbox-group a:hover {
+            text-decoration: underline;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-prev {
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+        }
+        
+        .btn-prev:hover {
+            background-color: #d5dbdb;
+        }
+        
+        .btn-next, .btn-submit {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+        }
+        
+        .btn-next:hover, .btn-submit:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 25px;
+            color: #7f8c8d;
+        }
+        
+        .login-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .success-message {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .success-icon {
+            font-size: 60px;
+            color: #2ecc71;
+            margin-bottom: 20px;
+        }
+        
+        .success-message h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .success-message p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 25px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo">
+            <h1>アカウント作成</h1>
+            <p>サービスをご利用するにはアカウントが必要です</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="step active">1</div>
+            <div class="step">2</div>
+            <div class="step">3</div>
+        </div>
+        
+        <form id="registerForm">
+            <!-- ステップ1: 基本情報 -->
+            <div class="form-step active" id="step1">
+                <div class="input-group">
+                    <label for="username">ユーザー名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="password">パスワード</label>
+                    <input type="password" id="password" name="password" required>
+                    <div class="password-requirements">
+                        8文字以上、大文字・小文字・数字を含めてください
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="confirmPassword">パスワード（確認）</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                
+                <div class="button-group">
+                    <div></div> <!-- 空の要素でバランスを取る -->
+                    <button type="button" class="btn btn-next" onclick="nextStep(1)">次へ</button>
+                </div>
+            </div>
+            
+            <!-- ステップ2: 詳細情報 -->
+            <div class="form-step" id="step2">
+                <div class="input-group">
+                    <label for="fullName">氏名</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="birthdate">生年月日</label>
+                    <input type="date" id="birthdate" name="birthdate" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="gender">性別</label>
+                    <select id="gender" name="gender">
+                        <option value="">選択してください</option>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                        <option value="other">その他</option>
+                        <option value="not_say">回答しない</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-prev" onclick="prevStep(2)">戻る</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep(2)">次へ</button>
+                </div>
+            </div>
+            
+            <!-- ステップ3: 利用規約 -->
+            <div class="form-step" id="step3">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms"><a href="#">利用規約</a>および<a href="#">プライバシーポリシー</a>に同意します</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="newsletter" name="newsletter">
+                    <label for="newsletter">最新情報やお得なキャンペーンのメールを受け取る</label>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-prev" onclick="prevStep(3)">戻る</button>
+                    <button type="submit" class="btn btn-submit">アカウント作成</button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- 登録完了メッセージ -->
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✓</div>
+            <h2>登録が完了しました！</h2>
+            <p>ご登録いただいたメールアドレスに確認メールを送信しました。</p>
+            <button class="btn btn-submit" onclick="goToLogin()">ログイン画面へ</button>
+        </div>
+        
+        <div class="login-link">
+            <p>既にアカウントをお持ちの方は <a href="#" onclick="goToLogin()">こちらからログイン</a></p>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        
+        function nextStep(step) {
+            // バリデーションチェック
+            if (step === 1 && !validateStep1()) {
+                return;
+            }
+            if (step === 2 && !validateStep2()) {
+                return;
+            }
+            
+            document.getElementById(`step${step}`).classList.remove('active');
+            document.getElementById(`step${step + 1}`).classList.add('active');
+            
+            // プログレスバーの更新
+            document.querySelectorAll('.step').forEach((el, index) => {
+                if (index < step) {
+                    el.classList.add('completed');
+                    el.classList.remove('active');
+                } else if (index === step) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                } else {
+                    el.classList.remove('active', 'completed');
+                }
+            });
+            
+            // プログレスバーの線を更新
+            document.querySelector('.progress-bar').style.setProperty('--progress', `${(step / 2) * 100}%`);
+            
+            currentStep = step + 1;
+        }
+        
+        function prevStep(step) {
+            document.getElementById(`step${step}`).classList.remove('active');
+            document.getElementById(`step${step - 1}`).classList.add('active');
+            
+            // プログレスバーの更新
+            document.querySelectorAll('.step').forEach((el, index) => {
+                if (index < step - 1) {
+                    el.classList.add('completed');
+                    el.classList.remove('active');
+                } else if (index === step - 1) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                } else {
+                    el.classList.remove('active', 'completed');
+                }
+            });
+            
+            currentStep = step - 1;
+        }
+        
+        function validateStep1() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!username) {
+                alert('ユーザー名を入力してください');
+                return false;
+            }
+            
+            if (!email) {
+                alert('メールアドレスを入力してください');
+                return false;
+            }
+            
+            if (!isValidEmail(email)) {
+                alert('有効なメールアドレスを入力してください');
+                return false;
+            }
+            
+            if (!password) {
+                alert('パスワードを入力してください');
+                return false;
+            }
+            
+            if (password.length < 8) {
+                alert('パスワードは8文字以上で入力してください');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('パスワードが一致しません');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function validateStep2() {
+            const fullName = document.getElementById('fullName').value;
+            const birthdate = document.getElementById('birthdate').value;
+            
+            if (!fullName) {
+                alert('氏名を入力してください');
+                return false;
+            }
+            
+            if (!birthdate) {
+                alert('生年月日を入力してください');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!document.getElementById('terms').checked) {
+                alert('利用規約に同意する必要があります');
+                return;
+            }
+            
+            // フォーム送信のシミュレーション
+            document.querySelectorAll('.form-step').forEach(step => {
+                step.style.display = 'none';
+            });
+            document.querySelector('.progress-bar').style.display = 'none';
+            document.querySelector('.login-link').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // 実際のアプリケーションではここでサーバーにデータを送信
+            console.log('フォームデータ送信:', {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                fullName: document.getElementById('fullName').value,
+                birthdate: document.getElementById('birthdate').value,
+                gender: document.getElementById('gender').value,
+                newsletter: document.getElementById('newsletter').checked
+            });
+        });
+        
+        function goToLogin() {
+            alert('ログイン画面に移動します');
+            // 実際のアプリケーションでは以下の行を使用
+            // window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

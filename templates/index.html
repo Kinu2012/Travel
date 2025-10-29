@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行プラン提案サービス</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .edit-btn {
+            background: linear-gradient(135deg, #ff9a44, #ff6b6b);
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="menu-screen">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>旅行プラン提案サービス</h1>
+                <p class="subtitle">あなたにぴったりの旅行プランをご提案します</p>
+            </div>
+            <main class="menu-buttons">
+                <button class="btn-primary start-btn" onclick="location.href='questionnaire.html'">
+                    プランの作成
+                </button>
+                <button class="btn-primary edit-btn" onclick="location.href='edit-menu.html'">
+                    プランの編集
+                </button>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
