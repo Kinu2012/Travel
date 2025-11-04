@@ -278,4 +278,5 @@ if __name__ == '__main__':
     
     # 本番環境ではdebug=Falseにすること
     is_debug = os.getenv('FLASK_ENV') == 'development'
-    app.run(debug=is_debug, host='0.0.0.0', port=3000)
+
+    app.run(debug=is_debug, host='0.0.0.0', port=5000)
