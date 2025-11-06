@@ -343,16 +343,40 @@
                 
                 <button type="submit" class="btn-primary" id="login-btn">ログイン</button>
                 
+                <div class="links">
+                    <a href="#" id="forgot-password-link">パスワードをお忘れですか?</a>
+                </div>
+                
                 <div class="divider"><span>または</span></div>
                 
                 <button type="button" class="btn-secondary" id="show-register-btn">新規アカウント作成</button>
-                
-                <div class="links">
-                    <a href="#" id="forgot-password">パスワードをお忘れですか?</a>
-                </div>
             </form>
             
             <div class="error-message" id="login-error"></div>
+        </div>
+        
+        <!-- パスワード復元画面 -->
+        <div class="screen" id="forgot-password-screen" style="display: none;">
+            <div class="header">
+                <h1>パスワード復元</h1>
+                <p class="subtitle">登録されているメールアドレスを入力してください</p>
+            </div>
+            
+            <form id="forgot-password-form">
+                <div class="input-group">
+                    <label for="forgot-email">メールアドレス</label>
+                    <input type="email" id="forgot-email" name="email" required>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="forgot-btn">復元リンクを送信</button>
+            </form>
+            
+            <div class="links">
+                <a href="#" id="back-to-login">ログイン画面に戻る</a>
+            </div>
+            
+            <div class="error-message" id="forgot-error"></div>
+            <div class="success-message" id="forgot-success"></div>
         </div>
         
         <!-- 新規登録画面 -->
@@ -462,13 +486,35 @@
         // 画面切り替え
         document.getElementById('show-register-btn').addEventListener('click', function() {
             document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'none';
             document.getElementById('register-screen').style.display = 'block';
             resetRegisterForm();
         });
         
-        document.getElementById('show-login-btn').addEventListener('click', function() {
+        document.getElementById('show-login-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('register-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+        });
+        
+        // パスワード復元画面へ
+        document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('register-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'block';
+        });
+        
+        // ログイン画面に戻る
+        document.getElementById('back-to-login').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('forgot-password-screen').style.display = 'none';
             document.getElementById('register-screen').style.display = 'none';
             document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('forgot-password-form').reset();
+            document.getElementById('forgot-error').style.display = 'none';
+            document.getElementById('forgot-success').style.display = 'none';
         });
         
         // ログインフォーム処理
@@ -530,6 +576,57 @@
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
+        
+        // パスワード復元フォーム送信
+        document.getElementById('forgot-password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgot-email').value;
+            const errorElement = document.getElementById('forgot-error');
+            const successElement = document.getElementById('forgot-success');
+            const submitBtn = document.getElementById('forgot-btn');
+            
+            // バリデーション
+            if (!email || !isValidEmail(email)) {
+                errorElement.textContent = '有効なメールアドレスを入力してください';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            // ボタンを無効化
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '送信中...<span class="loading"></span>';
+            errorElement.style.display = 'none';
+            successElement.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successElement.textContent = `パスワード復元メールを ${email} に送信しました。メールをご確認ください。`;
+                    successElement.style.display = 'block';
+                    document.getElementById('forgot-password-form').reset();
+                } else {
+                    errorElement.textContent = data.message || 'パスワード復元リクエストに失敗しました';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('パスワード復元エラー:', error);
+                errorElement.textContent = 'サーバーとの通信に失敗しました';
+                errorElement.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '復元リンクを送信';
+            }
+        });
         
         // 新規登録フォームのステップ管理
         let currentStep = 1;
@@ -689,5 +786,4 @@
         }
     </script>
 </body>
-
 </html>
