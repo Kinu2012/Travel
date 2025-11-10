@@ -31,12 +31,7 @@
     
     .header h1 {
       font-size: 24px;
-      margin-bottom: 5px;
-    }
-    
-    .header p {
-      font-size: 14px;
-      opacity: 0.9;
+      margin-bottom: 10px;
     }
     
     .back-btn {
@@ -60,6 +55,84 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     
+    /* 検索バー */
+    .search-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .search-input {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      width: 300px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .search-btn {
+      padding: 10px 25px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+    
+    .search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .clear-btn {
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    
+    .clear-btn:hover {
+      background: rgba(255,255,255,0.5);
+    }
+    
+    /* カテゴリ検索バー */
+    .category-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .category-select {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      width: 300px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: white;
+      cursor: pointer;
+    }
+    
+    .result-info {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
     .loading {
       position: absolute;
       top: 20px;
@@ -76,7 +149,7 @@
     }
     
     #map {
-      height: calc(100vh - 80px);
+      height: calc(100vh - 200px);
       width: 100%;
     }
     
@@ -114,7 +187,39 @@
   <div class="header">
     <button class="back-btn" onclick="location.href='index.html'">← 戻る</button>
     <h1>経路検索</h1>
-    <p>近畿地方の観光スポット（300件）</p>
+    
+    <!-- キーワード検索バー -->
+    <div class="search-container">
+      <input type="text" id="search-input" class="search-input" placeholder="スポット名で検索（例：大阪城、京都、寺）">
+      <button class="search-btn" onclick="searchSpots()">🔍 検索</button>
+      <button class="clear-btn" onclick="clearSearch()">クリア</button>
+    </div>
+    
+    <!-- カテゴリ検索バー -->
+    <div class="category-container">
+      <select id="category-select" class="category-select">
+        <option value="">-- カテゴリを選択 --</option>
+        <option value="castle">城</option>
+        <option value="buddhist">寺院</option>
+        <option value="shinto">神社</option>
+        <option value="museum">博物館</option>
+        <option value="gallery">美術館</option>
+        <option value="theme_park">テーマパーク</option>
+        <option value="heritage">世界遺産</option>
+        <option value="park">公園</option>
+        <option value="theatre">劇場</option>
+        <option value="restaurant">飲食店</option>
+        <option value="library">図書館</option>
+        <option value="cinema">映画館</option>
+        <option value="water_park">ウォーターパーク</option>
+        <option value="zoo">動物園</option>
+        <option value="aquarium">水族館</option>
+        <option value="viewpoint">展望台</option>
+      </select>
+      <button class="search-btn" onclick="searchByCategory()">カテゴリ検索</button>
+    </div>
+    
+    <div class="result-info" id="result-info">検索してスポットを表示</div>
     <div class="loading" id="loading">読み込み中...</div>
   </div>
   
@@ -134,9 +239,21 @@
       maxZoom: 19
     }).addTo(map);
     
+    // マーカーを管理する配列
+    let markers = [];
+    
     // ローディング表示
     const loading = document.getElementById('loading');
-    loading.classList.add('active');
+    const resultInfo = document.getElementById('result-info');
+    const searchInput = document.getElementById('search-input');
+    const categorySelect = document.getElementById('category-select');
+    
+    // Enterキーで検索
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchSpots();
+      }
+    });
     
     // スポットタイプ別のアイコン色設定
     function getMarkerColor(type) {
@@ -145,8 +262,21 @@
         '寺院': '#FF6347',
         '神社': '#FF4500',
         '博物館': '#4682B4',
+        '美術館': '#6A5ACD',
         'テーマパーク': '#FF1493',
-        '観光地': '#32CD32',
+        '世界遺産': '#DAA520',
+        '公園': '#32CD32',
+        '劇場': '#A0522D',
+        '飲食店': '#FFA500',
+        '図書館': '#20B2AA',
+        '映画館': '#708090',
+        'ウォーターパーク': '#00CED1',
+        '動物園': 'red',
+        '水族館': '#1E90FF',
+        '展望台': '#2E8B57',
+        '観光地': '#7B68EE',
+        '寺社': '#B22222',
+        'その他': '#808080',
         'other': '#808080'
       };
       return colors[type] || colors['other'];
@@ -170,55 +300,125 @@
       });
     }
     
-    // サーバーからスポットデータを取得
-    fetch('/api/overpass-spots')
-      .then(response => response.json())
-      .then(result => {
-        loading.classList.remove('active');
+    // マーカーをクリア
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
+    
+    // マーカー表示共通処理
+    function displayMarkers(spots, searchType) {
+      if (spots.length === 0) {
+        alert('該当するスポットが見つかりませんでした');
+        return;
+      }
+      
+      spots.forEach(function(spot) {
+        const icon = createCustomIcon(spot.type);
+        var marker = L.marker([spot.lat, spot.lon], { icon: icon }).addTo(map);
+        markers.push(marker);
         
-        if (!result.success) {
-          alert('データの取得に失敗しました: ' + result.message);
-          return;
+        var popupContent = `
+          <div class="popup-title">${spot.name}</div>
+          <span class="popup-type">${spot.type}</span>
+        `;
+        
+        if (spot.address) {
+          popupContent += `<div class="popup-address">📍 ${spot.address}</div>`;
         }
         
-        console.log(`取得したスポット数: ${result.count}件`);
+        if (spot.description) {
+          popupContent += `<div style="margin-top:5px; font-size:12px;">${spot.description}</div>`;
+        }
         
-        // 各スポットにマーカーを追加
-        result.spots.forEach(function(spot) {
-          // カスタムアイコンを使用
-          const icon = createCustomIcon(spot.type);
-          
-          // マーカーを作成
-          var marker = L.marker([spot.lat, spot.lon], { icon: icon }).addTo(map);
-          
-          // ポップアップの内容を作成
-          var popupContent = `
-            <div class="popup-title">${spot.name}</div>
-            <span class="popup-type">${spot.type}</span>
-          `;
-          
-          if (spot.address) {
-            popupContent += `<div class="popup-address">📍 ${spot.address}</div>`;
-          }
-          
-          if (spot.description) {
-            popupContent += `<div style="margin-top:5px; font-size:12px;">${spot.description}</div>`;
-          }
-          
-          if (spot.website) {
-            popupContent += `<div style="margin-top:5px;"><a href="${spot.website}" target="_blank" style="color:#667eea;">ウェブサイト</a></div>`;
-          }
-          
-          marker.bindPopup(popupContent);
-        });
+        if (spot.website) {
+          popupContent += `<div style="margin-top:5px;"><a href="${spot.website}" target="_blank" style="color:#667eea;">ウェブサイト</a></div>`;
+        }
         
-        console.log('すべてのマーカーを表示しました');
-      })
-      .catch(error => {
-        loading.classList.remove('active');
-        console.error('通信エラー:', error);
-        alert('サーバーとの通信に失敗しました');
+        marker.bindPopup(popupContent);
       });
+      
+      if (spots.length > 0) {
+        map.setView([spots[0].lat, spots[0].lon], 12);
+      }
+    }
+    
+    // キーワード検索実行
+    function searchSpots() {
+      const query = searchInput.value.trim();
+      
+      if (!query) {
+        alert('検索キーワードを入力してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = '検索中...';
+      
+      fetch(`/api/search-spots?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `「${result.query}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'keyword');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // カテゴリ検索実行
+    function searchByCategory() {
+      const category = categorySelect.value;
+      
+      if (!category) {
+        alert('カテゴリを選択してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = 'カテゴリ検索中...';
+      
+      fetch(`/api/search-by-category?category=${encodeURIComponent(category)}`)
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `カテゴリ「${result.category_name}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'category');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // 検索クリア
+    function clearSearch() {
+      searchInput.value = '';
+      categorySelect.value = '';
+      clearMarkers();
+      resultInfo.textContent = '検索してスポットを表示';
+      map.setView([34.8, 135.5], 9);
+    }
   </script>
 </body>
 </html>
