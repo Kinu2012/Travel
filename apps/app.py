@@ -727,40 +727,170 @@ def send_password_reset_email(to_email, reset_url, user_name=None):
         print(f"メール送信エラー: {e}")
         return False
     
+import re
+import requests
+from flask import jsonify, request
+
 @app.route('/api/overpass-spots', methods=['GET'])
 def get_overpass_spots():
-    """Overpass APIから近畿地方の主要観光スポットを取得"""
-    
-    # Overpass API クエリ（バランス版）
+    """Overpass APIから厳選された観光スポットのみを取得"""
+
     overpass_query = """
     [out:json][timeout:25];
     (
-      // 城・史跡
-      node["historic"="castle"](34.0,135.0,35.5,136.5);
-      way["historic"="castle"](34.0,135.0,35.5,136.5);
-      
-      // 寺院
-      node["amenity"="place_of_worship"]["religion"="buddhist"](34.0,135.0,35.5,136.5);
-      
-      // 神社
-      node["amenity"="place_of_worship"]["religion"="shinto"](34.0,135.0,35.5,136.5);
-      
-      // 博物館
-      node["tourism"="museum"](34.0,135.0,35.5,136.5);
-      
-      // 主要観光地
-      node["tourism"="attraction"](34.0,135.0,35.5,136.5);
-      
-      // テーマパーク
-      node["tourism"="theme_park"](34.0,135.0,35.5,136.5);
+      node["historic"="castle"](33.5,134.5,35.8,136.8);
+      way["historic"="castle"](33.5,134.5,35.8,136.8);
+
+      node["amenity"="place_of_worship"]["religion"="buddhist"]["wikidata"](33.5,134.5,35.8,136.8);
+      node["amenity"="place_of_worship"]["religion"="shinto"]["wikidata"](33.5,134.5,35.8,136.8);
+
+      node["tourism"="museum"](33.5,134.5,35.8,136.8);
+      way["tourism"="museum"](33.5,134.5,35.8,136.8);
+      node["tourism"="gallery"](33.5,134.5,35.8,136.8);
+
+      node["tourism"="theme_park"](33.5,134.5,35.8,136.8);
+      way["tourism"="theme_park"](33.5,134.5,35.8,136.8);
+
+      node["heritage"="1"](33.5,134.5,35.8,136.8);
+      way["heritage"="1"](33.5,134.5,35.8,136.8);
+      relation["heritage"="1"](33.5,134.5,35.8,136.8);
+
+      node["leisure"="park"]["operator"~"国"](33.5,134.5,35.8,136.8);
+
+      node["amenity"="theatre"](33.5,134.5,35.8,136.8);
+
+      node["amenity"~"restaurant|cafe|fast_food|food_court|bar|pub"](33.5,134.5,35.8,136.8);
+
+      node["amenity"="library"](33.5,134.5,35.8,136.8);
+      node["amenity"="cinema"](33.5,134.5,35.8,136.8);
+      node["leisure"="water_park"](33.5,134.5,35.8,136.8);
+      node["tourism"="zoo"](33.5,134.5,35.8,136.8);
+      node["tourism"="aquarium"](33.5,134.5,35.8,136.8);
+      node["tourism"="viewpoint"](33.5,134.5,35.8,136.8);
     );
-    out body 300;
+    out body 150;
+    """
+
+    try:
+        overpass_url = "http://overpass-api.de/api/interpreter"
+        response = requests.post(overpass_url, data={'data': overpass_query}, timeout=30)
+
+        if response.status_code != 200:
+            return jsonify({'success': False, 'message': 'Overpass APIからのデータ取得に失敗しました'}), 500
+
+        data = response.json()
+        spots_dict = {}
+
+        for element in data.get('elements', []):
+            if 'tags' not in element:
+                continue
+
+            tags = element['tags']
+            element_id = element.get('id')
+            lat = element.get('lat') or element.get('center', {}).get('lat')
+            lon = element.get('lon') or element.get('center', {}).get('lon')
+            name = tags.get('name:ja') or tags.get('name') or tags.get('name:en')
+
+            if not name or name == '名称不明':
+                continue
+            if len(name) > 20:
+                continue
+
+            bad_keywords = ['詰所', '案内', '地図', '乗り場', '駐車場', 'トイレ',
+                            '入口', '出口', '受付', '売店', 'ゲート', '記念碑']
+            if any(keyword in name for keyword in bad_keywords):
+                continue
+            if any(keyword in str(value) for value in tags.values() for keyword in bad_keywords):
+                continue
+
+            if lat and lon and element_id not in spots_dict:
+                spot_type = 'その他'
+                if tags.get('historic') == 'castle':
+                    spot_type = '城'
+                elif tags.get('religion') == 'buddhist':
+                    spot_type = '寺院'
+                elif tags.get('religion') == 'shinto':
+                    spot_type = '神社'
+                elif tags.get('tourism') == 'museum':
+                    spot_type = '博物館'
+                elif tags.get('tourism') == 'gallery':
+                    spot_type = '美術館'
+                elif tags.get('tourism') == 'theme_park':
+                    spot_type = 'テーマパーク'
+                elif tags.get('heritage') == '1':
+                    spot_type = '世界遺産'
+                elif tags.get('leisure') == 'park':
+                    spot_type = '公園'
+                elif tags.get('amenity') == 'theatre':
+                    spot_type = '劇場'
+                elif tags.get('amenity') in ['restaurant', 'cafe', 'fast_food', 'food_court', 'bar', 'pub']:
+                    spot_type = '飲食店'
+                elif tags.get('amenity') == 'library':
+                    spot_type = '図書館'
+                elif tags.get('amenity') == 'cinema':
+                    spot_type = '映画館'
+                elif tags.get('leisure') == 'water_park':
+                    spot_type = 'ウォーターパーク'
+                elif tags.get('tourism') == 'zoo':
+                    spot_type = '動物園'
+                elif tags.get('tourism') == 'aquarium':
+                    spot_type = '水族館'
+                elif tags.get('tourism') == 'viewpoint':
+                    spot_type = '展望台'
+                
+                # ✅ websiteを複数の可能性から取得
+                website = (tags.get('website') or 
+                          tags.get('contact:website') or 
+                          tags.get('url') or 
+                          tags.get('official_website') or '')
+
+                spots_dict[element_id] = {
+                    'id': element_id,
+                    'name': name,
+                    'lat': lat,
+                    'lon': lon,
+                    'type': spot_type,
+                    'address': tags.get('addr:full', tags.get('addr:city', '')),
+                    'description': tags.get('description', ''),
+                    'website': website  # ✅ 徹底的に取得
+                }
+
+        spots = list(spots_dict.values())
+        return jsonify({'success': True, 'count': len(spots), 'spots': spots}), 200
+
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'message': 'APIリクエストがタイムアウトしました'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'エラーが発生しました: {str(e)}'}), 500
+
+@app.route('/api/search-spots', methods=['GET'])
+def search_spots():
+    """検索クエリに基づいて観光スポットを検索"""    
+    
+    query = request.args.get('query', '').strip()
+    
+    if not query:
+        return jsonify({
+            'success': False,
+            'message': '検索キーワードを入力してください'
+        }), 400
+    
+    overpass_query = f"""
+    [out:json][timeout:30];
+    (
+      node["name"~"{query}",i](34.4,135.2,34.9,135.8);
+      way["name"~"{query}",i](34.4,135.2,34.9,135.8);
+      node["name"~"{query}",i](34.8,135.5,35.3,136.0);
+      way["name"~"{query}",i](34.8,135.5,35.3,136.0);
+      node["name"~"{query}",i](34.4,135.6,34.9,136.1);
+      way["name"~"{query}",i](34.4,135.6,34.9,136.1);
+    );
+    out body 100;
     """
     
     try:
-        # Overpass APIにリクエスト
         overpass_url = "http://overpass-api.de/api/interpreter"
-        response = requests.post(overpass_url, data={'data': overpass_query}, timeout=30)
+        response = requests.post(overpass_url, data={'data': overpass_query}, timeout=60)
         
         if response.status_code != 200:
             return jsonify({
@@ -769,66 +899,88 @@ def get_overpass_spots():
             }), 500
         
         data = response.json()
-        
-        # データを整形（重複を除外）
         spots_dict = {}
+        
         for element in data.get('elements', []):
-            if 'tags' in element:
-                tags = element['tags']
-                element_id = element.get('id')
+            if 'tags' not in element:
+                continue
+
+            tags = element['tags']
+            element_id = element.get('id')
+            lat = element.get('lat') or element.get('center', {}).get('lat')
+            lon = element.get('lon') or element.get('center', {}).get('lon')
+            name = tags.get('name:ja') or tags.get('name') or '名称不明'
+
+            if lat and lon and element_id not in spots_dict:
+                spot_type = 'その他'
+                if tags.get('historic') == 'castle':
+                    spot_type = '城'
+                elif tags.get('religion') == 'buddhist':
+                    spot_type = '寺院'
+                elif tags.get('religion') == 'shinto':
+                    spot_type = '神社'
+                elif tags.get('tourism') == 'museum':
+                    spot_type = '博物館'
+                elif tags.get('tourism') == 'aquarium':
+                    spot_type = '水族館'
+                elif tags.get('tourism') == 'theme_park':
+                    spot_type = 'テーマパーク'
+                elif tags.get('tourism') == 'attraction':
+                    spot_type = '観光地'
+                elif tags.get('tourism') == 'viewpoint':
+                    spot_type = '展望台'
+                elif tags.get('tourism') == 'zoo':
+                    spot_type = '動物園'
+                elif tags.get('leisure') == 'water_park':
+                    spot_type = 'ウォーターパーク'
+                elif tags.get('leisure') == 'park':
+                    spot_type = '公園'
+                elif tags.get('amenity') == 'place_of_worship':
+                    spot_type = '寺社'
+                elif tags.get('amenity') == 'theatre':
+                    spot_type = '劇場'
+                elif tags.get('amenity') == 'library':
+                    spot_type = '図書館'
+                elif tags.get('amenity') == 'cinema':
+                    spot_type = '映画館'
+                elif tags.get('amenity') in ['restaurant', 'cafe', 'fast_food', 'food_court', 'bar', 'pub']:
+                    spot_type = '飲食店'
                 
-                # 座標を取得
-                lat = element.get('lat') or (element.get('center', {}).get('lat'))
-                lon = element.get('lon') or (element.get('center', {}).get('lon'))
-                
-                # 名前を取得（日本語名優先）
-                name = tags.get('name:ja', tags.get('name', '名称不明'))
-                
-                if lat and lon and element_id not in spots_dict:
-                    # タイプを判定
-                    spot_type = 'other'
-                    if tags.get('historic') == 'castle':
-                        spot_type = '城'
-                    elif tags.get('religion') == 'buddhist':
-                        spot_type = '寺院'
-                    elif tags.get('religion') == 'shinto':
-                        spot_type = '神社'
-                    elif tags.get('tourism') == 'museum':
-                        spot_type = '博物館'
-                    elif tags.get('tourism') == 'theme_park':
-                        spot_type = 'テーマパーク'
-                    elif tags.get('tourism') == 'attraction':
-                        spot_type = '観光地'
-                    
-                    spot = {
-                        'id': element_id,
-                        'name': name,
-                        'lat': lat,
-                        'lon': lon,
-                        'type': spot_type,
-                        'address': tags.get('addr:full', tags.get('addr:city', '')),
-                        'description': tags.get('description', ''),
-                        'website': tags.get('website', ''),
-                    }
-                    spots_dict[element_id] = spot
+                # ✅ websiteを複数の可能性から取得
+                website = (tags.get('website') or 
+                          tags.get('contact:website') or 
+                          tags.get('url') or 
+                          tags.get('official_website') or '')
+
+                spots_dict[element_id] = {
+                    'id': element_id,
+                    'name': name,
+                    'lat': lat,
+                    'lon': lon,
+                    'type': spot_type,
+                    'address': tags.get('addr:full', tags.get('addr:city', '')),
+                    'description': tags.get('description', ''),
+                    'website': website  # ✅ 徹底的に取得
+                }
         
         spots = list(spots_dict.values())
-        
-        print(f"取得したスポット数: {len(spots)}件")
+        print(f"検索結果: {len(spots)}件（キーワード: {query}）")
         
         return jsonify({
             'success': True,
+            'query': query,
             'count': len(spots),
             'spots': spots
         }), 200
         
     except requests.exceptions.Timeout:
+        print(f"タイムアウト: キーワード「{query}」")
         return jsonify({
             'success': False,
             'message': 'APIリクエストがタイムアウトしました'
         }), 504
     except Exception as e:
-        print(f"Overpass API エラー: {e}")
+        print(f"検索エラー: {e}")
         return jsonify({
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
@@ -837,3 +989,124 @@ def get_overpass_spots():
 
 
 
+@app.route('/api/search-by-category', methods=['GET'])
+def search_by_category():
+    """カテゴリで観光スポットを検索"""
+    
+    category = request.args.get('category', '').strip()
+    
+    if not category:
+        return jsonify({
+            'success': False,
+            'message': 'カテゴリを選択してください'
+        }), 400
+    
+    # カテゴリに応じたOverpass APIクエリを生成
+    category_queries = {
+        'castle': ('node["historic"="castle"](33.5,134.5,35.8,136.8); way["historic"="castle"](33.5,134.5,35.8,136.8);', '城'),
+        'buddhist': ('node["amenity"="place_of_worship"]["religion"="buddhist"]["wikidata"](33.5,134.5,35.8,136.8);', '寺院'),
+        'shinto': ('node["amenity"="place_of_worship"]["religion"="shinto"]["wikidata"](33.5,134.5,35.8,136.8);', '神社'),
+        'museum': ('node["tourism"="museum"](33.5,134.5,35.8,136.8); way["tourism"="museum"](33.5,134.5,35.8,136.8);', '博物館'),
+        'gallery': ('node["tourism"="gallery"](33.5,134.5,35.8,136.8);', '美術館'),
+        'theme_park': ('node["tourism"="theme_park"](33.5,134.5,35.8,136.8); way["tourism"="theme_park"](33.5,134.5,35.8,136.8);', 'テーマパーク'),
+        'heritage': ('node["heritage"="1"](33.5,134.5,35.8,136.8); way["heritage"="1"](33.5,134.5,35.8,136.8); relation["heritage"="1"](33.5,134.5,35.8,136.8);', '世界遺産'),
+        'park': ('node["leisure"="park"](33.5,134.5,35.8,136.8);', '公園'),
+        'theatre': ('node["amenity"="theatre"](33.5,134.5,35.8,136.8);', '劇場'),
+        'restaurant': ('node["amenity"~"restaurant|cafe|fast_food|food_court|bar|pub"](33.5,134.5,35.8,136.8);', '飲食店'),
+        'library': ('node["amenity"="library"](33.5,134.5,35.8,136.8);', '図書館'),
+        'cinema': ('node["amenity"="cinema"](33.5,134.5,35.8,136.8);', '映画館'),
+        'water_park': ('node["leisure"="water_park"](33.5,134.5,35.8,136.8);', 'ウォーターパーク'),
+        'zoo': ('node["tourism"="zoo"](33.5,134.5,35.8,136.8);', '動物園'),
+        'aquarium': ('node["tourism"="aquarium"](33.5,134.5,35.8,136.8);', '水族館'),
+        'viewpoint': ('node["tourism"="viewpoint"](33.5,134.5,35.8,136.8);', '展望台'),
+    }
+    
+    if category not in category_queries:
+        return jsonify({
+            'success': False,
+            'message': '無効なカテゴリです'
+        }), 400
+    
+    query_part, category_name = category_queries[category]
+    
+    overpass_query = f"""
+    [out:json][timeout:30];
+    (
+      {query_part}
+    );
+    out body 100;
+    """
+    
+    try:
+        overpass_url = "http://overpass-api.de/api/interpreter"
+        response = requests.post(overpass_url, data={'data': overpass_query}, timeout=60)
+        
+        if response.status_code != 200:
+            return jsonify({
+                'success': False,
+                'message': 'Overpass APIからのデータ取得に失敗しました'
+            }), 500
+        
+        data = response.json()
+        spots_dict = {}
+        
+        for element in data.get('elements', []):
+            if 'tags' not in element:
+                continue
+
+            tags = element['tags']
+            element_id = element.get('id')
+            lat = element.get('lat') or element.get('center', {}).get('lat')
+            lon = element.get('lon') or element.get('center', {}).get('lon')
+            name = tags.get('name:ja') or tags.get('name') or '名称不明'
+            
+            if not name or name == '名称不明':
+                continue
+            if len(name) > 20:
+                continue
+            
+            bad_keywords = ['詰所', '案内', '地図', '乗り場', '駐車場', 'トイレ',
+                            '入口', '出口', '受付', '売店', 'ゲート', '記念碑']
+            if any(keyword in name for keyword in bad_keywords):
+                continue
+
+            # ✅ websiteを複数の可能性から取得
+            website = (tags.get('website') or 
+                    tags.get('contact:website') or 
+                    tags.get('url') or 
+                    tags.get('official_website') or '')
+            if lat and lon and element_id not in spots_dict:
+                spots_dict[element_id] = {
+                    'id': element_id,
+                    'name': name,
+                    'lat': lat,
+                    'lon': lon,
+                    'type': category_name,
+                    'address': tags.get('addr:full', tags.get('addr:city', '')),
+                    'description': tags.get('description', ''),
+                    'website': website  # ✅ 徹底的に取得
+                }
+        
+        spots = list(spots_dict.values())
+        print(f"カテゴリ検索結果: {len(spots)}件（カテゴリ: {category_name}）")
+        
+        return jsonify({
+            'success': True,
+            'category': category,
+            'category_name': category_name,
+            'count': len(spots),
+            'spots': spots
+        }), 200
+        
+    except requests.exceptions.Timeout:
+        print(f"タイムアウト: カテゴリ「{category}」")
+        return jsonify({
+            'success': False,
+            'message': 'APIリクエストがタイムアウトしました'
+        }), 504
+    except Exception as e:
+        print(f"カテゴリ検索エラー: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
