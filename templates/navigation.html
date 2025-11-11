@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ナビゲーション画面</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    font-size: 20px;
+  }
+  #map {
+    width: 100%;
+    height: 60vh;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 24px;
+  }
+  #navigation-info {
+    padding: 10px;
+    background-color: #f9f9f9;
+  }
+  #navigation-info div {
+    margin: 5px 0;
+  }
+  button {
+    padding: 10px 15px;
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  .error {
+    background-color: #ffcccc;
+    color: #900;
+    padding: 10px;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button onclick="goBack()">← 戻る</button> ナビゲーション
+</header>
+
+<div id="map">
+  地図表示エリア
+  <br>
+  (現在地) ● → (目的地) ★
+</div>
+
+<div id="navigation-info">
+  <div id="next-turn">次の案内: 右折 50m先</div>
+  <div id="distance-time">残り距離: 2.3km / 所要時間: 12分</div>
+  <div id="error-msg" class="error" style="display:none;">経路を取得できません</div>
+  <button id="retry-btn" style="display:none;" onclick="retryRoute()">再試行</button>
+</div>
+
+<script>
+  // 戻るボタン処理
+  function goBack() {
+    window.history.back();
+  }
+
+  // GPS・経路取得シミュレーション
+  let gpsAvailable = true; // falseにするとGPS取得失敗シナリオ
+  let routeAvailable = true; // falseにすると経路取得失敗シナリオ
+
+  function initNavigation() {
+    if(!gpsAvailable) {
+      alert("現在地を取得できません。GPSをONにしてください。");
+      return;
+    }
+
+    if(!routeAvailable) {
+      document.getElementById("error-msg").style.display = "block";
+      document.getElementById("retry-btn").style.display = "inline-block";
+      return;
+    }
+
+    // ここに地図描画やリアルタイム更新の処理を追加可能
+    console.log("ナビゲーション開始");
+  }
+
+  function retryRoute() {
+    document.getElementById("error-msg").style.display = "none";
+    document.getElementById("retry-btn").style.display = "none";
+    routeAvailable = true; // 再試行で取得成功
+    initNavigation();
+  }
+
+//2025/10/25:route_search.htmlと連動
+  // URLパラメータを取得
+function getQueryParams() {
+  const params = {};
+  location.search.substring(1).split("&").forEach(item => {
+    const [key, value] = item.split("=");
+    params[key] = decodeURIComponent(value);
+  });
+  return params;
+}
+
+window.onload = function() {
+  const params = getQueryParams();
+  if(!params.route || !params.start || !params.destination){
+    alert("経路情報が正しく渡されていません");
+    return;
+  }
+
+  // ナビゲーション情報を画面に表示
+  document.getElementById("next-turn").textContent = `次の案内: ${params.route}に従って進行`;
+  document.getElementById("distance-time").textContent = `出発: ${params.start} / 目的地: ${params.destination}`;
+
+  // GPSや経路取得シミュレーションを開始
+  initNavigation();
+};
+
+//多分必要ないところ
+  // ページ読み込み時に初期化
+  //window.onload = initNavigation;
+</script>
+
+</body>
+</html>

@@ -5,32 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>旅行プラン提案サービス</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .edit-btn {
-            background: linear-gradient(135deg, #ff9a44, #ff6b6b);
-            margin-top: 15px;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <div class="container" id="menu-screen">
         <div class="screen active">
             <div class="questionnaire-header">
-                <h1>旅行プラン提案サービス</h1>
-                <p class="subtitle">あなたにぴったりの旅行プランをご提案します</p>
+                <div class="logo-container">
+                    <span class="logo-icon">✈️</span>
+                    <h1>Traveling.Kinki</h1>
+                </div>
+                <p class="subtitle">旅の計画は、ここから始まる。</p>
             </div>
             <main class="menu-buttons">
                 <button class="btn-primary start-btn" onclick="location.href='questionnaire.html'">
-                    プランの作成
+                    <span class="material-icons">search</span>
+                    プランの検索
                 </button>
                 <button class="btn-primary edit-btn" onclick="location.href='edit-menu.html'">
-                    プランの編集
+                    <span class="material-icons">edit</span>
+                    プランの作成・編集
                 </button>
                 <button class="btn-primary" onclick="location.href='user-edit.html'">
+                    <span class="material-icons">person</span>
                     ユーザー情報の編集
                 </button>
                 <button class="btn-primary" onclick="location.href='map.html'">
+                    <span class="material-icons">map</span>
                     地図の表示
+                </button>
+                <button class="btn-primary" onclick="location.href='route-search.html'">
+                    <span class="material-icons">directions</span>
+                    経路を検索する
                 </button>
             </main>
         </div>

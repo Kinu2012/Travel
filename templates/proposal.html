@@ -4,42 +4,348 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>旅行プラン提案</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .answers-summary {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .answers-summary h2 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .answer-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .answer-tag {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .answer-tag strong {
+            color: #667eea;
+        }
+
+        .spots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .spot-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .spot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .spot-emoji {
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .spot-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .spot-category {
+            text-align: center;
+            color: #667eea;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .spot-description {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .spot-address {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .spot-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #f0f0f0;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .spots-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style> -->
 </head>
 <body>
     <div class="container">
-        <div class="screen active">
-            <div class="questionnaire-header">
-                <h1>あなたにおすすめの旅行プラン</h1>
-                <p class="subtitle">回答内容をもとに最適なプランを提案します</p>
+        <div class="header">
+            <h1>✨ あなたにおすすめの旅行プラン</h1>
+            <p class="subtitle">回答内容をもとに厳選したスポットをご提案します</p>
+        </div>
+
+        <!-- 回答サマリー -->
+        <div class="answers-summary">
+            <h2>📋 あなたの回答</h2>
+            <div class="answer-tags">
+                {% set mood_labels = {
+                    'excited': '🎉 ワクワクしている',
+                    'relaxed': '😌 のんびりしている',
+                    'adventurous': '🏔️ 冒険したい',
+                    'chilled': '🍵 まったりしたい'
+                } %}
+                {% set purpose_labels = {
+                    'relax': '🏖️ リラックス',
+                    'adventure': '🧗 アドベンチャー',
+                    'culture': '🏯 文化体験',
+                    'gourmet': '🍣 グルメ'
+                } %}
+                {% set budget_labels = {
+                    'low': '💰 節約（3万円以下）',
+                    'medium': '💵 普通（3〜8万円）',
+                    'high': '💎 贅沢（8万円以上）'
+                } %}
+                {% set duration_labels = {
+                    'short': '🌅 日帰り〜1泊',
+                    'medium': '🏨 2〜3泊',
+                    'long': '✈️ 4泊以上'
+                } %}
+                {% set companion_labels = {
+                    'solo': '🙋 一人旅',
+                    'couple': '👫 カップル',
+                    'family': '👨‍👩‍👧‍👦 家族',
+                    'friends': '👥 友人'
+                } %}
+
+                <span class="answer-tag">{{ mood_labels.get(answers.mood, answers.mood) }}</span>
+                <span class="answer-tag">{{ purpose_labels.get(answers.purpose, answers.purpose) }}</span>
+                <span class="answer-tag">{{ budget_labels.get(answers.budget, answers.budget) }}</span>
+                <span class="answer-tag">{{ duration_labels.get(answers.duration, answers.duration) }}</span>
+                <span class="answer-tag">{{ companion_labels.get(answers.companion, answers.companion) }}</span>
             </div>
-            <main>
-                <div class="plans-container" id="plans-container">
-                    <!-- JavaScriptでプランを動的に生成 -->
+        </div>
+
+        <!-- スポット一覧 -->
+        {% if spots %}
+        <div class="spots-grid">
+            {% for spot in spots %}
+            <div class="spot-card" onclick="showSpotDetail('{{ spot.id }}')">
+                <div class="spot-emoji">{{ spot.image }}</div>
+                <div class="spot-category">{{ spot.category }}</div>
+                <div class="spot-name">{{ spot.name }}</div>
+                <div class="spot-address">
+                    📍 {{ spot.address }}
                 </div>
-                <div class="navigation-buttons" style="justify-content: center; margin-top: 30px;">
-                    <button class="nav-btn" onclick="location.href='index.html'">
-                        🏠 トップに戻る
-                    </button>
+                <div class="spot-description">
+                    {{ spot.description }}
                 </div>
-            </main>
+                <div class="spot-tags">
+                    {% for tag in spot.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🤔</div>
+            <p>おすすめのスポットが見つかりませんでした。</p>
+            <p>もう一度アンケートに回答してみてください。</p>
+        </div>
+        {% endif %}
+
+        <!-- アクション -->
+        <div class="actions">
+            <a href="/questionnaire" class="btn btn-secondary">
+                🔄 もう一度診断する
+            </a>
+            <button class="btn btn-primary" onclick="location.href='index.html'">
+
+                🏠 トップに戻る
+            </button>
+            <a href="/edit-spots" class="btn btn-primary">
+                ✏️ スポットを編集する
+            </a>
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script>
-        // URLパラメータから回答を取得してプランを生成
+        function showSpotDetail(spotId) {
+            // スポット詳細表示（将来的にモーダルやページ遷移）
+            console.log('スポット詳細:', spotId);
+            // TODO: モーダルまたは詳細ページへ遷移
+            alert('スポット詳細機能は準備中です！\nID: ' + spotId);
+        }
+
+        // ページロード時のアニメーション
         document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const answers = {
-                mood: urlParams.get('mood'),
-                purpose: urlParams.get('purpose'),
-                budget: urlParams.get('budget'),
-                duration: urlParams.get('duration'),
-                companion: urlParams.get('companion')
-            };
-            
-            generatePlans(answers);
+            const cards = document.querySelectorAll('.spot-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 100);
+            });
         });
     </script>
 </body>
