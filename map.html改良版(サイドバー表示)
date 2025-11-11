@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経路検索 - 地図表示</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1000;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+    
+    .back-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    /* 検索バー */
+    .search-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .search-input {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      width: 300px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .search-btn {
+      padding: 10px 25px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+    
+    .search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .clear-btn {
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    
+    .clear-btn:hover {
+      background: rgba(255,255,255,0.5);
+    }
+    
+    /* カテゴリ検索バー */
+    .category-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .category-select {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      width: 300px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: white;
+      cursor: pointer;
+    }
+    
+    .result-info {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .loading.active {
+      display: block;
+    }
+    
+    /* メインコンテンツエリア */
+    .main-content {
+      display: flex;
+      height: calc(100vh - 200px);
+      position: relative;
+    }
+    
+    /* 地図エリア */
+    #map {
+      flex: 1;
+      height: 100%;
+      transition: all 0.3s;
+    }
+    
+    /* サイドパネル */
+    .side-panel {
+      width: 0;
+      height: 100%;
+      background: white;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      transition: width 0.3s;
+      position: relative;
+    }
+    
+    .side-panel.active {
+      width: 400px;
+    }
+    
+    .side-panel-content {
+      padding: 0;
+      display: none;
+    }
+    
+    .side-panel.active .side-panel-content {
+      display: block;
+    }
+    
+    .panel-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .close-panel-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255,255,255,0.3);
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    
+    .close-panel-btn:hover {
+      background: rgba(255,255,255,0.5);
+      transform: rotate(90deg);
+    }
+    
+    .panel-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      padding-right: 40px;
+    }
+    
+    .panel-type {
+      display: inline-block;
+      background: rgba(255,255,255,0.3);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    
+    .panel-body {
+      padding: 25px;
+    }
+    
+    /* 詳細セクション */
+    .detail-section {
+      margin-bottom: 25px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .detail-section:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .detail-content {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #333;
+    }
+    
+    .detail-description {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      line-height: 1.8;
+      color: #555;
+    }
+    
+    .detail-link {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      font-weight: bold;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+    
+    .detail-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .detail-coordinates {
+      display: inline-block;
+      background: #f0f3ff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #667eea;
+    }
+    
+    /* ポップアップスタイル */
+    .leaflet-popup-content {
+      margin: 15px;
+      line-height: 1.6;
+      min-width: 200px;
+    }
+    
+    .popup-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .popup-type {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .popup-detail-btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+      transition: all 0.3s;
+    }
+    
+    .popup-detail-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .side-panel.active {
+        width: 100%;
+        position: absolute;
+        z-index: 1500;
+      }
+      
+      .search-input {
+        width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ヘッダー -->
+  <div class="header">
+    <button class="back-btn" onclick="location.href='index.html'">← 戻る</button>
+    <h1>経路検索</h1>
+    
+    <!-- キーワード検索バー -->
+    <div class="search-container">
+      <input type="text" id="search-input" class="search-input" placeholder="スポット名で検索(例:大阪城、京都、寺)">
+      <button class="search-btn" onclick="searchSpots()">🔍 検索</button>
+      <button class="clear-btn" onclick="clearSearch()">クリア</button>
+    </div>
+    
+    <!-- カテゴリ検索バー -->
+    <div class="category-container">
+      <select id="category-select" class="category-select">
+        <option value="">-- カテゴリを選択 --</option>
+        <option value="castle">城</option>
+        <option value="buddhist">寺院</option>
+        <option value="shinto">神社</option>
+        <option value="museum">博物館</option>
+        <option value="gallery">美術館</option>
+        <option value="theme_park">テーマパーク</option>
+        <option value="heritage">世界遺産</option>
+        <option value="park">公園</option>
+        <option value="theatre">劇場</option>
+        <option value="restaurant">飲食店</option>
+        <option value="library">図書館</option>
+        <option value="cinema">映画館</option>
+        <option value="water_park">ウォーターパーク</option>
+        <option value="zoo">動物園</option>
+        <option value="aquarium">水族館</option>
+        <option value="viewpoint">展望台</option>
+      </select>
+      <button class="search-btn" onclick="searchByCategory()">カテゴリ検索</button>
+    </div>
+    
+    <div class="result-info" id="result-info">検索してスポットを表示</div>
+    <div class="loading" id="loading">読み込み中...</div>
+  </div>
+  
+  <!-- メインコンテンツエリア -->
+  <div class="main-content">
+    <!-- 地図エリア -->
+    <div id="map"></div>
+    
+    <!-- サイドパネル -->
+    <div class="side-panel" id="side-panel">
+      <div class="side-panel-content" id="side-panel-content">
+        <!-- JavaScriptで動的に内容を挿入 -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // グローバル変数
+    var map = L.map('map').setView([34.8, 135.5], 9);
+    let markers = [];
+    let currentSpot = null;
+    
+    // OpenStreetMapのタイルレイヤーを追加
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+    
+    // DOM要素
+    const loading = document.getElementById('loading');
+    const resultInfo = document.getElementById('result-info');
+    const searchInput = document.getElementById('search-input');
+    const categorySelect = document.getElementById('category-select');
+    const sidePanel = document.getElementById('side-panel');
+    
+    // Enterキーで検索
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchSpots();
+      }
+    });
+    
+    // スポット詳細をサイドパネルに表示
+    function showSpotDetail(spot) {
+      currentSpot = spot;
+      const detailHTML = generateDetailHTML(spot);
+      
+      document.getElementById('side-panel-content').innerHTML = `
+        <div class="panel-header">
+          <button class="close-panel-btn" onclick="closeSidePanel()">×</button>
+          <div class="panel-title">${spot.name}</div>
+          <div class="panel-type">${spot.type}</div>
+        </div>
+        <div class="panel-body">
+          ${detailHTML}
+        </div>
+      `;
+      
+      sidePanel.classList.add('active');
+    }
+    
+    // 詳細HTML生成
+    function generateDetailHTML(spot) {
+      let html = '';
+      
+      // 住所
+      if (spot.address) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">📍 住所</div>
+            <div class="detail-content">${spot.address}</div>
+          </div>
+        `;
+      }
+      
+      // 概要
+      if (spot.description) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">ℹ️ 概要</div>
+            <div class="detail-description">${spot.description}</div>
+          </div>
+        `;
+      }
+      
+      // 座標
+      html += `
+        <div class="detail-section">
+          <div class="detail-section-title">📌 位置情報</div>
+          <div class="detail-coordinates">
+            緯度: ${spot.lat.toFixed(6)}<br>
+            経度: ${spot.lon.toFixed(6)}
+          </div>
+        </div>
+      `;
+      
+      // ウェブサイト
+      if (spot.website) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">🌐 公式サイト</div>
+            <a href="${spot.website}" target="_blank" class="detail-link">
+              公式サイトを開く →
+            </a>
+          </div>
+        `;
+      }
+      
+      return html;
+    }
+    
+    // サイドパネルを閉じる
+    function closeSidePanel() {
+      sidePanel.classList.remove('active');
+    }
+    
+    // スポットタイプ別のアイコン色設定
+    function getMarkerColor(type) {
+      const colors = {
+        '城': '#8B4513',
+        '寺院': '#FF6347',
+        '神社': '#FF4500',
+        '博物館': '#4682B4',
+        '美術館': '#6A5ACD',
+        'テーマパーク': '#FF1493',
+        '世界遺産': '#DAA520',
+        '公園': '#32CD32',
+        '劇場': '#A0522D',
+        '飲食店': '#FFA500',
+        '図書館': '#20B2AA',
+        '映画館': '#708090',
+        'ウォーターパーク': '#00CED1',
+        '動物園': 'red',
+        '水族館': '#1E90FF',
+        '展望台': '#2E8B57',
+        '観光地': '#7B68EE',
+        '寺社': '#B22222',
+        'その他': '#808080',
+        'other': '#808080'
+      };
+      return colors[type] || colors['other'];
+    }
+    
+    // カスタムアイコン作成
+    function createCustomIcon(type) {
+      const color = getMarkerColor(type);
+      return L.divIcon({
+        className: 'custom-icon',
+        html: `<div style="
+          background-color: ${color};
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        "></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+    }
+    
+    // マーカーをクリア
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
+    
+    // マーカー表示
+    function displayMarkers(spots, searchType) {
+      if (spots.length === 0) {
+        alert('該当するスポットが見つかりませんでした');
+        return;
+      }
+      
+      spots.forEach(function(spot) {
+        const icon = createCustomIcon(spot.type);
+        var marker = L.marker([spot.lat, spot.lon], { icon: icon }).addTo(map);
+        markers.push(marker);
+        
+        // シンプルなポップアップ
+        var popupContent = `
+          <div>
+            <div class="popup-title">${spot.name}</div>
+            <span class="popup-type">${spot.type}</span>
+            <button class="popup-detail-btn" onclick='showSpotDetail(${JSON.stringify(spot).replace(/'/g, "&apos;")})'>
+              詳細を見る
+            </button>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        // マーカークリックで詳細表示
+        marker.on('click', function() {
+          setTimeout(() => showSpotDetail(spot), 100);
+        });
+      });
+      
+      if (spots.length > 0) {
+        map.setView([spots[0].lat, spots[0].lon], 12);
+      }
+    }
+    
+    // キーワード検索実行
+    function searchSpots() {
+      const query = searchInput.value.trim();
+      
+      if (!query) {
+        alert('検索キーワードを入力してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = '検索中...';
+      
+      fetch(`/api/search-spots?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `「${result.query}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'keyword');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // カテゴリ検索実行
+    function searchByCategory() {
+      const category = categorySelect.value;
+      
+      if (!category) {
+        alert('カテゴリを選択してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = 'カテゴリ検索中...';
+      
+      fetch(`/api/search-by-category?category=${encodeURIComponent(category)}`)
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `カテゴリ「${result.category_name}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'category');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // 検索クリア
+    function clearSearch() {
+      searchInput.value = '';
+      categorySelect.value = '';
+      clearMarkers();
+      closeSidePanel();
+      resultInfo.textContent = '検索してスポットを表示';
+      map.setView([34.8, 135.5], 9);
+    }
+    
+    // Overpass API から観光スポットを取得して表示
+    function loadOverpassSpots() {
+      loading.classList.add('active');
+      resultInfo.textContent = '観光スポットを読み込み中...';
+
+      fetch('/api/overpass-spots')
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          if (result.success) {
+            resultInfo.textContent = `観光スポットを読み込みました (${result.count}件)`;
+            displayMarkers(result.spots, 'overpass');
+          } else {
+            alert(result.message);
+            resultInfo.textContent = 'スポットの取得に失敗しました';
+          }
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+
+    // ページ読み込み時に自動でOverpassスポットを取得
+    window.addEventListener('load', loadOverpassSpots);
+  </script>
+</body>
+</html>
