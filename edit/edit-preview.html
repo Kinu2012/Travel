@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プラン確認</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/base.css">
+    <link rel="stylesheet" href="static/layout.css">
+    <link rel="stylesheet" href="static/page-menu.css">
+    <link rel="stylesheet" href="static/page-questionnaire.css">
+    <link rel="stylesheet" href="static/page-proposal.css">
+    <link rel="stylesheet" href="static/page-edit.css">
+    <link rel="stylesheet" href="static/page-login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>プラン確認</h1>
+                <p class="subtitle">作成したプランを確認してください</p>
+            </div>
+
+            <div class="plan-preview">
+                <div class="plan-header-preview">
+                    <h2 id="planTitle">マイ旅行プラン</h2>
+                    <div class="plan-category" id="planCategory"></div>
+                </div>
+                
+                <div class="plan-spots">
+                    <h3>訪問スポット</h3>
+                    <ul id="spotsList">
+                        <!-- 選択されたスポットが表示される -->
+                    </ul>
+                </div>
+                
+                <div class="plan-actions">
+                    <button class="nav-btn" onclick="editPlan()">
+                        ✏️ 編集する
+                    </button>
+                    <button class="nav-btn next-btn" onclick="savePlan()">
+                        💾 保存する
+                    </button>
+                </div>
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="nav-btn" onclick="location.href='edit-spots.html'">
+                    <span>←</span> 戻る
+                </button>
+                <button class="nav-btn" onclick="location.href='edit-menu.html'">
+                    🏠 メニューへ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const category = localStorage.getItem('selectedCategory') || 'nature';
+            const spots = JSON.parse(localStorage.getItem('selectedSpots') || '[]');
+            
+            displayPlan(category, spots);
+        });
+
+        function displayPlan(category, spots) {
+            // カテゴリー表示
+            const categoryNames = {
+                nature: '自然・景色',
+                culture: '文化・歴史', 
+                gourmet: 'グルメ',
+                shopping: 'ショッピング',
+                activity: 'アクティビティ',
+                relax: 'リラクゼーション'
+            };
+            
+            document.getElementById('planCategory').textContent = categoryNames[category] || 'その他';
+            
+            // スポット表示
+            const spotsList = document.getElementById('spotsList');
+            spotsList.innerHTML = spots.map(spot => `
+                <li>
+                    <strong>${spot.name}</strong>
+                    ${spot.address ? `<br><small>${spot.address}</small>` : ''}
+                </li>
+            `).join('');
+        }
+
+        function editPlan() {
+            location.href = 'edit-spots.html';
+        }
+
+        function savePlan() {
+            const category = localStorage.getItem('selectedCategory');
+            const spots = JSON.parse(localStorage.getItem('selectedSpots') || '[]');
+            
+            // ここでデータベース保存処理を実装
+            // デモではlocalStorageに保存
+            const savedPlans = JSON.parse(localStorage.getItem('savedPlans') || '[]');
+            const newPlan = {
+                id: Date.now(),
+                category: category,
+                spots: spots,
+                createdAt: new Date().toISOString(),
+                title: `マイ${getCategoryName(category)}プラン`
+            };
+            
+            savedPlans.push(newPlan);
+            localStorage.setItem('savedPlans', JSON.stringify(savedPlans));
+            
+            alert('プランを保存しました！');
+            location.href = 'edit-menu.html';
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                nature: '自然',
+                culture: '文化',
+                gourmet: 'グルメ', 
+                shopping: 'ショッピング',
+                activity: 'アクティビティ',
+                relax: 'リラックス'
+            };
+            return names[category] || '旅行';
+        }
+    </script>
+</body>
+</html>

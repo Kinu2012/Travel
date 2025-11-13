@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プラン編集</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/base.css">
+    <style>
+        /* プラン編集ページのスタイル */
+        .edit-form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-control, .form-select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        
+        .days-container {
+            margin-top: 20px;
+        }
+        
+        .day-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .day-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .activities-container {
+            margin-top: 10px;
+        }
+        
+        .activity-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .activity-time {
+            width: 80px;
+        }
+        
+        .activity-location {
+            flex: 1;
+        }
+        
+        .activity-description {
+            flex: 2;
+        }
+        
+        .activity-budget {
+            width: 100px;
+        }
+        
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .btn-add {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .btn-save {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .loading-indicator {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .empty-day-message {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="screen active">
+            <div class="questionnaire-header">
+                <h1>プランの編集</h1>
+                <p class="subtitle" id="subtitle">プランの詳細を編集できます</p>
+            </div>
+            
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">読み込み中...</span>
+                </div>
+                <p class="mt-2">プランデータを読み込み中...</p>
+            </div>
+            
+            <div id="editFormContainer" class="edit-form-container" style="display: none;">
+                <!-- 基本情報セクション -->
+                <div class="form-section">
+                    <h3 class="section-title">基本情報</h3>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">プラン名</label>
+                                <input type="text" id="planName" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">ステータス</label>
+                                <select id="planStatus" class="form-select">
+                                    <option value="draft">下書き</option>
+                                    <option value="published">公開</option>
+                                    <option value="completed">完了</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">旅行開始日</label>
+                                <input type="date" id="startDate" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">旅行終了日</label>
+                                <input type="date" id="endDate" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">総予算 (円)</label>
+                                <input type="number" id="totalBudget" class="form-control" min="0" step="1000">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">参加人数</label>
+                                <input type="number" id="participantCount" class="form-control" min="1" value="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 日程詳細セクション -->
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="section-title">日程詳細</h3>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addNewDay()">+ 日を追加</button>
+                    </div>
+                    
+                    <div id="daysContainer" class="days-container">
+                        <!-- 日単位のカードがここに動的に挿入されます -->
+                    </div>
+                </div>
+                
+                <!-- アクションボタン -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
+                    <button type="button" class="btn-save" onclick="savePlan()">変更を保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // プラン編集マネージャー
+        class PlanEditor {
+            constructor() {
+                this.planId = this.getPlanIdFromURL();
+                this.planData = null;
+                this.days = [];
+                this.init();
+            }
+            
+            // URLからプランIDを取得
+            getPlanIdFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('planId');
+            }
+            
+            async init() {
+                if (!this.planId) {
+                    alert('プランIDが指定されていません');
+                    location.href = 'saved-plans.html';
+                    return;
+                }
+                
+                await this.loadPlanData();
+                this.setupEventListeners();
+                this.renderForm();
+            }
+            
+            // プランデータの読み込み
+            async loadPlanData() {
+                try {
+                    // TODO: 実際のAPIに置き換え
+                    const response = await fetch(`/api/plans/${this.planId}`);
+                    if (response.ok) {
+                        this.planData = await response.json();
+                    } else {
+                        // モックデータで開発
+                        this.planData = this.getMockPlanData();
+                    }
+                } catch (error) {
+                    console.error('プランデータの読み込みに失敗しました:', error);
+                    this.planData = this.getMockPlanData();
+                }
+                
+                // 日程データを初期化
+                if (this.planData.plan_data && this.planData.plan_data.days) {
+                    this.days = [...this.planData.plan_data.days];
+                } else {
+                    // 日程データがない場合は空の日程を作成
+                    this.initializeDays();
+                }
+            }
+            
+            // 開発用モックデータ
+            getMockPlanData() {
+                const mockPlans = {
+                    1: {
+                        plan_id: 1,
+                        plan_name: "京都文化旅",
+                        travel_start_date: "2024-03-01",
+                        travel_end_date: "2024-03-03",
+                        total_budget: 50000,
+                        participant_count: 2,
+                        plan_status: "draft",
+                        visibility: "private",
+                        created_at: "2024-01-15T10:00:00",
+                        plan_data: {
+                            days: [
+                                {
+                                    day: 1,
+                                    date: "2024-03-01",
+                                    activities: [
+                                        { time: "09:00", location: "京都駅", activity: "到着", budget: 0 },
+                                        { time: "10:00", location: "金閣寺", activity: "観光", budget: 800 },
+                                        { time: "12:00", location: "嵐山", activity: "昼食", budget: 1500 }
+                                    ]
+                                },
+                                {
+                                    day: 2,
+                                    date: "2024-03-02",
+                                    activities: [
+                                        { time: "09:00", location: "伏見稲荷大社", activity: "観光", budget: 0 },
+                                        { time: "14:00", location: "清水寺", activity: "観光", budget: 600 }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    2: {
+                        plan_id: 2,
+                        plan_name: "北海道夏旅",
+                        travel_start_date: "2024-07-15",
+                        travel_end_date: "2024-07-20",
+                        total_budget: 120000,
+                        participant_count: 4,
+                        plan_status: "published",
+                        visibility: "private",
+                        created_at: "2024-01-20T14:30:00",
+                        plan_data: null
+                    }
+                };
+                
+                return mockPlans[this.planId] || mockPlans[1];
+            }
+            
+            // 日程データの初期化
+            initializeDays() {
+                this.days = [];
+                const startDate = new Date(this.planData.travel_start_date);
+                const endDate = new Date(this.planData.travel_end_date);
+                
+                let currentDate = new Date(startDate);
+                let dayNumber = 1;
+                
+                while (currentDate <= endDate) {
+                    this.days.push({
+                        day: dayNumber,
+                        date: currentDate.toISOString().split('T')[0],
+                        activities: []
+                    });
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    dayNumber++;
+                }
+            }
+            
+            // フォームの表示
+            renderForm() {
+                // ローディングインジケーターを非表示に
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('editFormContainer').style.display = 'block';
+                
+                // サブタイトルを更新
+                document.getElementById('subtitle').textContent = 
+                    `「${this.planData.plan_name}」の編集`;
+                
+                // 基本情報をフォームに設定
+                document.getElementById('planName').value = this.planData.plan_name;
+                document.getElementById('planStatus').value = this.planData.plan_status;
+                document.getElementById('startDate').value = this.planData.travel_start_date;
+                document.getElementById('endDate').value = this.planData.travel_end_date;
+                document.getElementById('totalBudget').value = this.planData.total_budget;
+                document.getElementById('participantCount').value = this.planData.participant_count;
+                
+                // 日程を表示
+                this.renderDays();
+            }
+            
+            // 日程の表示
+            renderDays() {
+                const container = document.getElementById('daysContainer');
+                
+                if (this.days.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-day-message">
+                            日程が設定されていません。「日を追加」ボタンで追加してください。
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = this.days.map(day => `
+                    <div class="day-card" data-day="${day.day}">
+                        <div class="day-header">
+                            <h4 class="day-title">${day.day}日目 - ${this.formatDate(day.date)}</h4>
+                            <button type="button" class="btn-remove" onclick="planEditor.removeDay(${day.day})">削除</button>
+                        </div>
+                        <div class="activities-container">
+                            ${this.renderActivities(day.activities, day.day)}
+                        </div>
+                        <button type="button" class="btn-add" onclick="planEditor.addActivity(${day.day})">+ アクティビティを追加</button>
+                    </div>
+                `).join('');
+            }
+            
+            // アクティビティの表示
+            renderActivities(activities, dayNumber) {
+                if (!activities || activities.length === 0) {
+                    return `<div class="empty-day-message">アクティビティが設定されていません</div>`;
+                }
+                
+                return activities.map((activity, index) => `
+                    <div class="activity-item">
+                        <input type="time" class="activity-time form-control" 
+                               value="${activity.time || ''}" 
+                               onchange="planEditor.updateActivity(${dayNumber}, ${index}, 'time', this.value)">
+                        <input type="text" class="activity-location form-control" 
+                               placeholder="場所" 
+                               value="${activity.location || ''}" 
+                               onchange="planEditor.updateActivity(${dayNumber}, ${index}, 'location', this.value)">
+                        <input type="text" class="activity-description form-control" 
+                               placeholder="アクティビティ" 
+                               value="${activity.activity || ''}" 
+                               onchange="planEditor.updateActivity(${dayNumber}, ${index}, 'activity', this.value)">
+                        <input type="number" class="activity-budget form-control" 
+                               placeholder="予算" 
+                               value="${activity.budget || ''}" 
+                               onchange="planEditor.updateActivity(${dayNumber}, ${index}, 'budget', this.value)">
+                        <button type="button" class="btn-remove" 
+                                onclick="planEditor.removeActivity(${dayNumber}, ${index})">×</button>
+                    </div>
+                `).join('');
+            }
+            
+            // 新しい日の追加
+            addNewDay() {
+                const newDayNumber = this.days.length + 1;
+                const lastDate = this.days.length > 0 ? 
+                    new Date(this.days[this.days.length - 1].date) : 
+                    new Date(this.planData.travel_start_date);
+                
+                lastDate.setDate(lastDate.getDate() + 1);
+                
+                this.days.push({
+                    day: newDayNumber,
+                    date: lastDate.toISOString().split('T')[0],
+                    activities: []
+                });
+                
+                this.renderDays();
+            }
+            
+            // 日の削除
+            removeDay(dayNumber) {
+                if (!confirm(`${dayNumber}日目を削除してもよろしいですか？`)) return;
+                
+                this.days = this.days.filter(day => day.day !== dayNumber);
+                // 日付を再計算
+                this.days.forEach((day, index) => {
+                    day.day = index + 1;
+                });
+                
+                this.renderDays();
+            }
+            
+            // アクティビティの追加
+            addActivity(dayNumber) {
+                const day = this.days.find(d => d.day === dayNumber);
+                if (day) {
+                    if (!day.activities) day.activities = [];
+                    day.activities.push({
+                        time: "12:00",
+                        location: "",
+                        activity: "",
+                        budget: 0
+                    });
+                    this.renderDays();
+                }
+            }
+            
+            // アクティビティの更新
+            updateActivity(dayNumber, activityIndex, field, value) {
+                const day = this.days.find(d => d.day === dayNumber);
+                if (day && day.activities && day.activities[activityIndex]) {
+                    if (field === 'budget') {
+                        day.activities[activityIndex][field] = parseFloat(value) || 0;
+                    } else {
+                        day.activities[activityIndex][field] = value;
+                    }
+                }
+            }
+            
+            // アクティビティの削除
+            removeActivity(dayNumber, activityIndex) {
+                const day = this.days.find(d => d.day === dayNumber);
+                if (day && day.activities) {
+                    day.activities.splice(activityIndex, 1);
+                    this.renderDays();
+                }
+            }
+            
+            // イベントリスナーの設定
+            setupEventListeners() {
+                // 開始日・終了日変更時の処理
+                document.getElementById('startDate').addEventListener('change', (e) => {
+                    this.updateTravelDates();
+                });
+                
+                document.getElementById('endDate').addEventListener('change', (e) => {
+                    this.updateTravelDates();
+                });
+            }
+            
+            // 旅行日付の更新
+            updateTravelDates() {
+                const startDate = new Date(document.getElementById('startDate').value);
+                const endDate = new Date(document.getElementById('endDate').value);
+                
+                if (startDate > endDate) {
+                    alert('開始日は終了日より前である必要があります');
+                    document.getElementById('endDate').value = this.planData.travel_end_date;
+                    return;
+                }
+                
+                // 日程を再計算
+                this.initializeDays();
+                this.renderDays();
+            }
+            
+            // プランの保存
+            async savePlan() {
+                // フォームデータを収集
+                const formData = {
+                    plan_name: document.getElementById('planName').value,
+                    plan_status: document.getElementById('planStatus').value,
+                    travel_start_date: document.getElementById('startDate').value,
+                    travel_end_date: document.getElementById('endDate').value,
+                    total_budget: parseFloat(document.getElementById('totalBudget').value) || 0,
+                    participant_count: parseInt(document.getElementById('participantCount').value) || 1,
+                    plan_data: {
+                        days: this.days
+                    }
+                };
+                
+                // バリデーション
+                if (!formData.plan_name) {
+                    alert('プラン名を入力してください');
+                    return;
+                }
+                
+                if (!formData.travel_start_date || !formData.travel_end_date) {
+                    alert('旅行期間を入力してください');
+                    return;
+                }
+                
+                try {
+                    // TODO: 実際のAPI呼び出しに置き換え
+                    const response = await fetch(`/api/plans/${this.planId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    if (response.ok) {
+                        alert('プランを保存しました');
+                        location.href = 'saved-plans.html';
+                    } else {
+                        alert('保存に失敗しました');
+                    }
+                } catch (error) {
+                    console.error('保存エラー:', error);
+                    alert('保存中にエラーが発生しました');
+                    // 開発中はモック保存を実行
+                    this.mockSavePlan(formData);
+                }
+            }
+            
+            // 開発用のモック保存関数
+            mockSavePlan(formData) {
+                console.log('モック保存:', formData);
+                alert('プランを保存しました（モック機能）');
+                setTimeout(() => {
+                    location.href = 'saved-plans.html';
+                }, 1000);
+            }
+            
+            // ユーティリティ関数
+            formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'short'
+                });
+            }
+        }
+        
+        // グローバル関数
+        function cancelEdit() {
+            if (confirm('編集をキャンセルしますか？変更内容は保存されません。')) {
+                location.href = 'saved-plans.html';
+            }
+        }
+        
+        function savePlan() {
+            if (planEditor) {
+                planEditor.savePlan();
+            }
+        }
+        
+        function addNewDay() {
+            if (planEditor) {
+                planEditor.addNewDay();
+            }
+        }
+        
+        // グローバルインスタンス
+        let planEditor;
+        
+        // ページ読み込み時に初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            planEditor = new PlanEditor();
+        });
+    </script>
+</body>
+</html>
