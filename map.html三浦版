@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経路検索 - 地図表示</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <link rel="stylesheet" href="/static/css/map.css">
+      <link rel="stylesheet" href="/static/css/review.css">
+  
+</head>
+<body>
+  <!-- ヘッダー -->
+  <div class="header">
+    <button class="back-btn" onclick="location.href='index.html'">← 戻る</button>
+    <h1>経路検索</h1>
+    
+    <!-- キーワード検索バー -->
+    <div class="search-container">
+      <input type="text" id="search-input" class="search-input" placeholder="スポット名で検索(例:大阪城、京都、寺)">
+      <button class="search-btn" onclick="searchSpots()">🔍 検索</button>
+      <button class="clear-btn" onclick="clearSearch()">クリア</button>
+    </div>
+    
+    <!-- カテゴリ検索バー -->
+    <div class="category-container">
+      <select id="category-select" class="category-select">
+        <option value="">-- カテゴリを選択 --</option>
+        <option value="castle">城</option>
+        <option value="buddhist">寺院</option>
+        <option value="shinto">神社</option>
+        <option value="museum">博物館</option>
+        <option value="gallery">美術館</option>
+        <option value="theme_park">テーマパーク</option>
+        <option value="heritage">世界遺産</option>
+        <option value="park">公園</option>
+        <option value="theatre">劇場</option>
+        <option value="restaurant">飲食店</option>
+        <option value="library">図書館</option>
+        <option value="cinema">映画館</option>
+        <option value="water_park">ウォーターパーク</option>
+        <option value="zoo">動物園</option>
+        <option value="aquarium">水族館</option>
+        <option value="viewpoint">展望台</option>
+      </select>
+      <button class="search-btn" onclick="searchByCategory()">カテゴリ検索</button>
+    </div>
+    
+    <div class="result-info" id="result-info">検索してスポットを表示</div>
+    <div class="loading" id="loading">読み込み中...</div>
+  </div>
+  
+  <!-- メインコンテンツエリア -->
+  <div class="main-content">
+    <!-- 地図エリア -->
+    <div id="map">
+    <!-- ★★★ 距離測定ボタン（ここが重要！）★★★ -->
+      <button class="measure-btn" id="measure-btn" onclick="toggleMeasureTool(event)">
+       距離測定
+      </button>
+    </div>
+    
+    <!-- サイドパネル -->
+    <div class="side-panel" id="side-panel">
+      <div class="side-panel-content" id="side-panel-content">
+        <!-- JavaScriptで動的に内容を挿入 -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // グローバル変数
+    var map = L.map('map').setView([34.8, 135.5], 9);
+    let markers = [];
+    //2025/11/12追記
+    let facilityMarkers = [];
+    //ここだけ
+    let currentSpot = null;
+    // 2025/11/13追記
+    // 距離測定ツール用の変数（追加）
+    let isMeasuring = false;
+    let measurePoints = [];
+    let measureLines = [];
+    let measureMarkers = [];
+
+    //レビュー用の変数
+    let currentSpotForReview = null;
+    let selectedRating = 0;
+
+
+    // OpenStreetMapのタイルレイヤーを追加
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+    
+    // DOM要素
+    const loading = document.getElementById('loading');
+    const resultInfo = document.getElementById('result-info');
+    const searchInput = document.getElementById('search-input');
+    const categorySelect = document.getElementById('category-select');
+    const sidePanel = document.getElementById('side-panel');
+    
+    // Enterキーで検索
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchSpots();
+      }
+    });
+    
+  // スポット詳細をサイドパネルに表示
+function showSpotDetail(spot) {
+  currentSpot = spot;
+  const detailHTML = generateDetailHTML(spot);
+  
+  document.getElementById('side-panel-content').innerHTML = `
+    <div class="panel-header">
+      <button class="close-panel-btn" onclick="closeSidePanel()">×</button>
+      <div class="panel-title">${spot.name}</div>
+      <div class="panel-type">${spot.type}</div>
+    </div>
+    <div class="panel-body">
+      ${detailHTML}
+    </div>
+  `;
+  
+  sidePanel.classList.add('active');
+
+  // レビューボタンイベントリスナー設定（修正）
+    setTimeout(() => {
+      const reviewBtn = document.getElementById(`review-btn-${spot.id}`);
+      if (reviewBtn) {
+        reviewBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          openReviewModal(spot);
+        });
+      }
+      
+      // レビューを読み込み
+      loadSpotReviews(spot.id, `reviews-container-${spot.id}`);
+    }, 100);
+  }
+    
+    // 詳細HTML生成
+    function generateDetailHTML(spot) {
+      let html = '';
+      
+      // 住所
+      if (spot.address) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">📍 住所</div>
+            <div class="detail-content">${spot.address}</div>
+          </div>
+        `;
+      }
+      
+      // 概要
+      if (spot.description) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">ℹ️ 概要</div>
+            <div class="detail-description">${spot.description}</div>
+          </div>
+        `;
+      }
+      
+      // 座標
+      html += `
+        <div class="detail-section">
+          <div class="detail-section-title">📌 位置情報</div>
+          <div class="detail-coordinates">
+            緯度: ${spot.lat.toFixed(6)}<br>
+            経度: ${spot.lon.toFixed(6)}
+          </div>
+        </div>
+      `;
+      
+      // ウェブサイト
+      if (spot.website) {
+        html += `
+          <div class="detail-section">
+            <div class="detail-section-title">🌐 公式サイト</div>
+            <a href="${spot.website}" target="_blank" class="detail-link">
+              公式サイトを開く →
+            </a>
+          </div>
+        `;
+      }
+
+      //レビューセレクション
+      html +=`
+        <div class="detail-section">
+          <div class="detail-section-title"> レビュー</div>
+          <button class="review-btn" id="review-btn-${spot.id}">
+            レビューを投稿する
+          </button>
+          <div id="reviews-container-${spot.id}" style="margin-top: 20px;"></div>
+        </div>
+      `;
+
+      //周辺施設ボタン関連追記2025/11/12
+          html += `
+        <div class="detail-section">
+          <div class="detail-section-title">🔍 周辺施設</div>
+          <button class="nearby-btn" onclick="searchNearbyFacilities(${spot.lat}, ${spot.lon})">
+            周辺のコンビニ・駅・トイレを表示
+          </button>
+        </div>
+      `;
+
+      return html;
+    }
+    
+    // サイドパネルを閉じる
+    function closeSidePanel() {
+      sidePanel.classList.remove('active');
+    }
+
+    //　　　　レビュー機能
+    //セーフなレビューモーダル開く関数追記11/14
+    function openReviewModalSafe(id,name,lat,lon,type) {
+      const spot  = {
+        id: id,
+        name: name,
+        lat: lat,
+        lon: lon,
+        type: type
+      };
+      openReviewModal(spot);
+    }
+//2025/11/18新しく変更し、追加
+        // レビューモーダルを開く 
+// ログイン状態を確認する関数（新規追加）
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('/api/check-login', {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    return data.logged_in;
+  } catch (error) {
+    console.error('ログイン状態確認エラー:', error);
+    return false;
+  }
+}
+
+// レビューモーダルを開く（修正版）
+async function openReviewModal(spot) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  // ★★★ ログインチェック ★★★
+  const isLoggedIn = await checkLoginStatus();
+  
+  if (!isLoggedIn) {
+    if (confirm('レビューを投稿するにはログインが必要です。\nログインページに移動しますか？')) {
+      window.location.href = 'login.html?redirect=map.html';
+    }
+    return;
+  }
+
+  // ログイン済みの場合は通常通りモーダルを開く
+  currentSpotForReview = spot;
+  selectedRating = 0;
+  
+  const modalHTML = `
+    <div class="review-modal" id="review-modal">
+      <div class="review-modal-content">
+        <div class="review-modal-header">
+          <div class="review-modal-title">レビューを投稿</div>
+          <button class="review-modal-close" onclick="closeReviewModal()">×</button>
+        </div>
+        
+        <div class="review-form">
+          <div class="review-form-group">
+            <label>スポット名</label>
+            <input type="text" value="${spot.name}" disabled style="background: #f0f0f0;">
+          </div>
+          
+          <div class="star-rating">
+            <label>評価 <span style="color: #ff6b6b;">*</span></label>
+            <div class="stars" id="star-rating">
+              <span class="star" data-rating="1">★</span>
+              <span class="star" data-rating="2">★</span>
+              <span class="star" data-rating="3">★</span>
+              <span class="star" data-rating="4">★</span>
+              <span class="star" data-rating="5">★</span>
+            </div>
+          </div>
+          
+          <div class="review-form-group">
+            <label>訪問日</label>
+            <input type="date" id="visit-date" max="${new Date().toISOString().split('T')[0]}">
+          </div>
+          
+          <div class="review-form-group">
+            <label>コメント（任意）</label>
+            <textarea id="review-comment" placeholder="感想を書いてください..."></textarea>
+          </div>
+          
+          <button class="review-submit-btn" onclick="submitReview()">レビューを投稿</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const existingModal = document.getElementById('review-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  setTimeout(() => {
+    document.getElementById('review-modal').classList.add('active');
+  }, 10);
+  
+  setupStarRating();
+}
+    
+    // 星評価の設定
+    function setupStarRating() {
+      const stars = document.querySelectorAll('.star');
+      
+      stars.forEach(star => {
+        star.addEventListener('click', function() {
+          selectedRating = parseInt(this.dataset.rating);
+          updateStars(selectedRating);
+        });
+        
+        star.addEventListener('mouseenter', function() {
+          const rating = parseInt(this.dataset.rating);
+          updateStars(rating);
+        });
+      });
+      
+      document.getElementById('star-rating').addEventListener('mouseleave', function() {
+        updateStars(selectedRating);
+      });
+    }
+    
+    function updateStars(rating) {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach((star, index) => {
+        if (index < rating) {
+          star.classList.add('active');
+        } else {
+          star.classList.remove('active');
+        }
+      });
+    }
+    
+    // レビューモーダルを閉じる
+    function closeReviewModal() {
+      const modal = document.getElementById('review-modal');
+      if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+      }
+      currentSpotForReview = null;
+      selectedRating = 0;
+    }
+    
+    // レビューを投稿
+    function submitReview() {
+      if (!currentSpotForReview) {
+        alert('スポット情報が取得できませんでした');
+        return;
+      }
+      
+      if (selectedRating === 0) {
+        alert('評価を選択してください');
+        return;
+      }
+      
+      const visitDate = document.getElementById('visit-date').value;
+      const comment = document.getElementById('review-comment').value.trim();
+      
+      const reviewData = {
+        osm_id: currentSpotForReview.id,
+        osm_type: 'node',
+        spot_name: currentSpotForReview.name,
+        spot_lat: currentSpotForReview.lat,
+        spot_lon: currentSpotForReview.lon,
+        spot_type: currentSpotForReview.type || 'その他',
+        rating: selectedRating,
+        comment: comment,
+        visit_date: visitDate || null
+      };
+      
+      const submitBtn = document.querySelector('.review-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '投稿中...';
+      
+      fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', //追記11/16
+        body: JSON.stringify(reviewData)
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          alert('レビューを投稿しました！');
+          closeReviewModal();
+          showSpotDetail(currentSpotForReview);
+        } else {
+          alert(result.message || 'レビューの投稿に失敗しました');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'レビューを投稿';
+        }
+      })
+      .catch(error => {
+        console.error('レビュー投稿エラー:', error);
+        alert('サーバーとの通信に失敗しました');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'レビューを投稿';
+      });
+    }
+    
+    // スポットのレビュー一覧を取得
+    function loadSpotReviews(spotId, containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      container.innerHTML = '<div class="review-loading">レビューを読み込み中...</div>';
+      
+      fetch(`/api/reviews/spot/${spotId}`, {
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            displayReviews(result, container);
+          } else {
+            container.innerHTML = '<div class="no-reviews">レビューの読み込みに失敗しました</div>';
+          }
+        })
+        .catch(error => {
+          console.error('レビュー取得エラー:', error);
+          container.innerHTML = '<div class="no-reviews">レビューの読み込みに失敗しました</div>';
+        });
+    }
+    
+    // レビューを表示
+    function displayReviews(data, container) {
+      let html = '';
+      
+      if (data.count > 0) {
+        const stars = '★'.repeat(Math.round(data.average_rating)) + '☆'.repeat(5 - Math.round(data.average_rating));
+        html += `
+          <div class="average-rating">
+            <span class="rating-number">${data.average_rating}</span>
+            <span class="rating-stars">${stars}</span>
+            <span class="rating-count">(${data.count}件)</span>
+          </div>
+        `;
+      }
+      
+      html += '<div class="reviews-section-title">📝 レビュー一覧</div>';
+      html += '<div class="reviews-list">';
+      
+      if (data.reviews.length === 0) {
+        html += '<div class="no-reviews">まだレビューがありません。最初のレビューを投稿してみませんか？</div>';
+      } else {
+        data.reviews.forEach(review => {
+          const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+          const date = new Date(review.created_at).toLocaleDateString('ja-JP');
+          const visitDate = review.visit_date ? new Date(review.visit_date).toLocaleDateString('ja-JP') : null;
+          
+          html += `
+            <div class="review-item">
+              <div class="review-header">
+                <span class="review-user">${review.user_name || '匿名ユーザー'}</span>
+                <span class="review-date">${date}</span>
+              </div>
+              <div class="review-stars">${stars}</div>
+              ${review.comment ? `<div class="review-comment">${review.comment}</div>` : ''}
+              ${visitDate ? `<div class="review-visit-date">訪問日: ${visitDate}</div>` : ''}
+            </div>
+          `;
+        });
+      }
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    // スポットタイプ別のアイコン色設定
+    function getMarkerColor(type) {
+      const colors = {
+        '城': '#8B4513',
+        '寺院': '#FF6347',
+        '神社': '#FF4500',
+        '博物館': '#4682B4',
+        '美術館': '#6A5ACD',
+        'テーマパーク': '#FF1493',
+        '世界遺産': '#DAA520',
+        '公園': '#32CD32',
+        '劇場': '#A0522D',
+        '飲食店': '#FFA500',
+        '図書館': '#20B2AA',
+        '映画館': '#708090',
+        'ウォーターパーク': '#00CED1',
+        '動物園': 'red',
+        '水族館': '#1E90FF',
+        '展望台': '#2E8B57',
+        '観光地': '#7B68EE',
+        '寺社': '#B22222',
+        //2025/11/12追記
+        'コンビニ': '#4CAF50',
+        'トイレ': '#9C27B0',
+        '駐車場': '#795548',
+        'レストラン': '#FF5722',
+        'カフェ': '#FF9800',
+        '観光案内所': '#00BCD4',
+        '鉄道駅': '#F44336',
+        'バス停': '#FFC107',
+        //ここまで
+        'その他': '#808080',
+        'other': '#808080'
+      };
+      return colors[type] || colors['other'];
+    }
+    
+    // カスタムアイコン作成
+    function createCustomIcon(type) {
+      const color = getMarkerColor(type);
+      return L.divIcon({
+        className: 'custom-icon',
+        html: `<div style="
+          background-color: ${color};
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        "></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+    }
+    
+    // マーカーをクリア
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
+
+    // 周辺施設マーカーをクリア
+    function clearFacilityMarkers() {
+      facilityMarkers.forEach(marker => map.removeLayer(marker));
+      facilityMarkers = [];
+    }
+    
+    // マーカー表示
+    function displayMarkers(spots, searchType) {
+      if (spots.length === 0) {
+        alert('該当するスポットが見つかりませんでした');
+        return;
+      }
+      
+      spots.forEach(function(spot) {
+        const icon = createCustomIcon(spot.type);
+        var marker = L.marker([spot.lat, spot.lon], { icon: icon }).addTo(map);
+        markers.push(marker);
+        
+        // シンプルなポップアップ
+        var popupContent = `
+          <div>
+            <div class="popup-title">${spot.name}</div>
+            <span class="popup-type">${spot.type}</span>
+            <button class="popup-detail-btn" onclick='showSpotDetail(${JSON.stringify(spot).replace(/'/g, "&apos;")})'>
+              詳細を見る
+            </button>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        // マーカークリックで詳細表示
+        marker.on('click', function() {
+          setTimeout(() => showSpotDetail(spot), 100);
+        });
+      });
+      
+      if (spots.length > 0) {
+        map.setView([spots[0].lat, spots[0].lon], 12);
+      }
+    }
+    
+    // キーワード検索実行
+    function searchSpots() {
+      const query = searchInput.value.trim();
+      
+      if (!query) {
+        alert('検索キーワードを入力してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = '検索中...';
+      
+      fetch(`/api/search-spots?query=${encodeURIComponent(query)}`, {
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `「${result.query}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'keyword');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // カテゴリ検索実行
+    function searchByCategory() {
+      const category = categorySelect.value;
+      
+      if (!category) {
+        alert('カテゴリを選択してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = 'カテゴリ検索中...';
+      
+      fetch(`/api/search-by-category?category=${encodeURIComponent(category)}`,{
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `カテゴリ「${result.category_name}」の検索結果: ${result.count}件`;
+          displayMarkers(result.spots, 'category');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    
+    // 検索クリア
+    function clearSearch() {
+      searchInput.value = '';
+      categorySelect.value = '';
+      clearMarkers();
+      clearFacilityMarkers(); //2025/11/12追記
+      closeSidePanel();
+      resultInfo.textContent = '検索してスポットを表示';
+      map.setView([34.8, 135.5], 9);
+    }
+    
+    // Overpass API から観光スポットを取得して表示
+    function loadOverpassSpots() {
+      loading.classList.add('active');
+      resultInfo.textContent = '観光スポットを読み込み中...';
+
+      fetch('/api/overpass-spots',{
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          if (result.success) {
+            resultInfo.textContent = `観光スポットを読み込みました (${result.count}件)`;
+            displayMarkers(result.spots, 'overpass');
+          } else {
+            alert(result.message);
+            resultInfo.textContent = 'スポットの取得に失敗しました';
+          }
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+    //2025/11/12追記
+    // 周辺施設検索
+    function searchNearbyFacilities(lat, lon) {
+      clearFacilityMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = '周辺施設を検索中...';
+      
+      fetch(`/api/nearby-facilities?lat=${lat}&lon=${lon}&radius=500`,{
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('周辺施設の検索に失敗しました: ' + result.message);
+            return;
+          }
+          
+          resultInfo.textContent = `周辺施設: ${result.count}件を表示中`;
+          
+          // 周辺施設をマーカー表示
+          result.facilities.forEach(function(facility) {
+            const icon = createCustomIcon(facility.type);
+            var marker = L.marker([facility.lat, facility.lon], { icon: icon }).addTo(map);
+            facilityMarkers.push(marker);
+            
+            // ポップアップ
+            var popupContent = `
+              <div>
+                <div class="popup-title">${facility.name}</div>
+                <span class="popup-type">${facility.type}</span>
+                ${facility.address ? `<p style="margin-top: 8px; font-size: 13px;">${facility.address}</p>` : ''}
+              </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+          });
+          
+          // 地図の中心を検索地点に移動
+          map.setView([lat, lon], 15);
+          
+          alert(`周辺に ${result.count}件の施設が見つかりました！`);
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
+
+    //2025/11/13追記
+    // 距離測定ツール
+    function toggleMeasureTool(event) {
+
+      if (event) {
+        event.stopPropagation();
+      }
+
+      const btn = document.getElementById('measure-btn');
+      isMeasuring = !isMeasuring;
+      
+      if (isMeasuring) {
+        btn.classList.add('active');
+        btn.textContent = '✓ 測定中（クリア）';
+        map.getContainer().style.cursor = 'crosshair';
+        //11/13追加
+        resultInfo.textContent = '地図上をクリックして測定を開始してください';
+      setTimeout(() => {
+        startMeasuring();
+      }, 100);
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '📏 距離測定';
+        map.getContainer().style.cursor = '';
+        clearMeasuring();
+      }
+    }
+
+    function startMeasuring() {
+      map.on('click', onMapClickForMeasure);
+    }
+
+    function onMapClickForMeasure(e) {
+      if (!isMeasuring) return;
+      
+      const point = e.latlng;
+      const pointIndex = measurePoints.length; //マーカーのインデックス
+      measurePoints.push(point);
+      
+      // 測定点マーカーを追加
+      const marker = L.marker(point, {
+        icon: L.divIcon({
+          className: 'measure-marker',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        }),
+        draggable: true //これでドラッグ可能
+      }).addTo(map);
+      measureMarkers.push(marker);
+
+      //これでマーカードラッグした時の処理可能になる2025/11/13
+      marker.on('drag',function(e){
+        const newLatLng = e.target.getLatLng();
+        measurePoints[pointIndex] = newLatLng;
+        updateMeasureLines();
+      });
+      marker.on('dragend',function(e){
+        const newLatLng = e.target.getLatLng();
+        measurePoints[pointIndex] = newLatLng;
+        updateMeasureLines();
+      })
+      
+      // 2点目以降は線を引く
+      if (measurePoints.length > 1) {
+        const prevPoint = measurePoints[measurePoints.length - 2];
+        const line = L.polyline([prevPoint, point], {
+          color: '#667eea',
+          weight: 3,
+          opacity: 0.7,
+          dashArray: '10, 5'
+        }).addTo(map);
+        measureLines.push(line);
+        
+        // 距離を計算
+        const distance = map.distance(prevPoint, point);
+        const totalDistance = calculateTotalDistance();
+
+        
+        // 距離ラベルを表示
+        const midPoint = L.latLng(
+          (prevPoint.lat + point.lat) / 2,
+          (prevPoint.lng + point.lng) / 2
+        );
+        
+        const label = L.marker(midPoint, {
+          icon: L.divIcon({
+            className: 'distance-label',
+            html: `${formatDistance(distance)}<br><small>合計: ${formatDistance(totalDistance)}</small>`,
+            iconAnchor: [50, 20]
+          })
+        }).addTo(map);
+        measureMarkers.push(label);
+        
+        // 歩行時間の概算を表示
+        const walkingTime = Math.ceil(totalDistance / 80); // 時速4.8km = 80m/分
+        resultInfo.textContent = `測定中: 合計距離 ${formatDistance(totalDistance)} (徒歩約${walkingTime}分)`;
+      } else {
+        resultInfo.textContent = '測定中: 次の地点をクリックしてください';
+      }
+    }
+
+    //2025/11/13追記
+      // 距離の線とラベルを更新
+      function updateMeasureLines() {
+        // 既存の線とラベルを削除
+        measureLines.forEach(line => map.removeLayer(line));
+        measureLines = [];
+        
+        // ラベルマーカーだけを削除（測定点マーカーは残す）
+        measureMarkers.forEach((marker, index) => {
+          // 最初のN個は測定点マーカーなので残す
+          // それ以降はラベルなので削除
+          if (index >= measurePoints.length) {
+            map.removeLayer(marker);
+          }
+        });
+        // ラベル分を削除
+        measureMarkers = measureMarkers.slice(0, measurePoints.length);
+        
+        // 新しい線とラベルを描画
+        for (let i = 1; i < measurePoints.length; i++) {
+          const prevPoint = measurePoints[i - 1];
+          const point = measurePoints[i];
+          
+          // 線を描画
+          const line = L.polyline([prevPoint, point], {
+            color: '#667eea',
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '10, 5'
+          }).addTo(map);
+          measureLines.push(line);
+          
+          // 距離を計算
+          const distance = map.distance(prevPoint, point);
+          const totalDistance = calculateTotalDistance();
+          
+          // 距離ラベルを表示
+          const midPoint = L.latLng(
+            (prevPoint.lat + point.lat) / 2,
+            (prevPoint.lng + point.lng) / 2
+          );
+          
+          const label = L.marker(midPoint, {
+            icon: L.divIcon({
+              className: 'distance-label',
+              html: `${formatDistance(distance)}<br><small>合計: ${formatDistance(totalDistance)}</small>`,
+              iconAnchor: [50, 20]
+            })
+          }).addTo(map);
+          measureMarkers.push(label);
+        }
+        
+        // 合計距離を表示
+        const totalDistance = calculateTotalDistance();
+        const walkingTime = Math.ceil(totalDistance / 80);
+        resultInfo.textContent = `測定中: 合計距離 ${formatDistance(totalDistance)} (徒歩約${walkingTime}分)`;
+      } //ここまで
+
+    function calculateTotalDistance() {
+      let total = 0;
+      for (let i = 1; i < measurePoints.length; i++) {
+        total += map.distance(measurePoints[i - 1], measurePoints[i]);
+      }
+      return total;
+    }
+
+    function formatDistance(meters) {
+      if (meters < 1000) {
+        return Math.round(meters) + 'm';
+      } else {
+        return (meters / 1000).toFixed(2) + 'km';
+      }
+    }
+
+    function clearMeasuring() {
+      map.off('click', onMapClickForMeasure);
+      
+      // すべての測定マーカーと線を削除
+      measureMarkers.forEach(marker => map.removeLayer(marker));
+      measureLines.forEach(line => map.removeLayer(line));
+      
+      measurePoints = [];
+      measureMarkers = [];
+      measureLines = [];
+      
+      if (!isMeasuring) {
+        resultInfo.textContent = '検索してスポットを表示';
+      }
+    }
+
+    // ページ読み込み時に自動でOverpassスポットを取得
+    window.addEventListener('load', loadOverpassSpots);
+  </script>
+</body>
+</html>
