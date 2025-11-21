@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 旅行プランサービス</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #ff9a44 0%, #ff6b6b 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .screen {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: #ff9a44;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 154, 68, 0.2);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff9a44, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 15px;
+            background: #f8f9fa;
+            color: #7f8c8d;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            color: #7f8c8d;
+        }
+
+        .divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e9ecef;
+            z-index: 1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .links a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fadbd8;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: #27ae60;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #d5f4e6;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a44, #ff6b6b);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 33%;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #e67e22;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn-prev {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            color: #7f8c8d;
+            border: 1px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-prev:hover:not(:disabled) {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .btn-prev:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .checkbox-group a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .checkbox-group a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .screen {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn-prev, .btn-primary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ログイン画面 -->
+        <div class="screen" id="login-screen">
+            <div class="header">
+                <h1>ログイン</h1>
+                <p class="subtitle">アカウントにログインして旅行プランを作成しましょう</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="login-email">メールアドレス</label>
+                    <input type="email" id="login-email" name="email" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="login-password">パスワード</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="login-btn">ログイン</button>
+                
+                <div class="links">
+                    <a href="#" id="forgot-password-link">パスワードをお忘れですか?</a>
+                </div>
+                
+                <div class="divider"><span>または</span></div>
+                
+                <button type="button" class="btn-secondary" id="show-register-btn">新規アカウント作成</button>
+            </form>
+            
+            <div class="error-message" id="login-error"></div>
+        </div>
+        
+        <!-- パスワード復元画面 -->
+        <div class="screen" id="forgot-password-screen" style="display: none;">
+            <div class="header">
+                <h1>パスワード復元</h1>
+                <p class="subtitle">登録されているメールアドレスを入力してください</p>
+            </div>
+            
+            <form id="forgot-password-form">
+                <div class="input-group">
+                    <label for="forgot-email">メールアドレス</label>
+                    <input type="email" id="forgot-email" name="email" required>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="forgot-btn">復元リンクを送信</button>
+            </form>
+            
+            <div class="links">
+                <a href="#" id="back-to-login">ログイン画面に戻る</a>
+            </div>
+            
+            <div class="error-message" id="forgot-error"></div>
+            <div class="success-message" id="forgot-success"></div>
+        </div>
+        
+        <!-- 新規登録画面 -->
+        <div class="screen" id="register-screen" style="display: none;">
+            <div class="header">
+                <h1>アカウント作成</h1>
+                <p class="subtitle">サービスをご利用するにはアカウントが必要です</p>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-text" id="register-progress-text">ステップ 1/3</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="register-progress-fill"></div>
+                </div>
+            </div>
+            
+            <form id="register-form">
+                <!-- ステップ1: 基本情報 -->
+                <div class="form-step active" id="step1">
+                    <div class="input-group">
+                        <label for="register-username">ユーザー名</label>
+                        <input type="text" id="register-username" name="username" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-email">メールアドレス</label>
+                        <input type="email" id="register-email" name="email" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-password">パスワード</label>
+                        <input type="password" id="register-password" name="password" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-confirm-password">パスワード(確認)</label>
+                        <input type="password" id="register-confirm-password" name="confirmPassword" required>
+                    </div>
+                    
+                    <div class="button-group">
+                        <div></div>
+                        <button type="button" class="btn-primary" id="step1-next">次へ</button>
+                    </div>
+                </div>
+                
+                <!-- ステップ2: 詳細情報 -->
+                <div class="form-step" id="step2">
+                    <div class="input-group">
+                        <label for="register-fullname">氏名</label>
+                        <input type="text" id="register-fullname" name="fullname" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-birthdate">生年月日</label>
+                        <input type="date" id="register-birthdate" name="birthdate" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="register-gender">性別</label>
+                        <select id="register-gender" name="gender">
+                            <option value="">選択してください</option>
+                            <option value="male">男性</option>
+                            <option value="female">女性</option>
+                            <option value="other">その他</option>
+                            <option value="not_say">回答しない</option>
+                        </select>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="btn-prev" id="step2-prev">戻る</button>
+                        <button type="button" class="btn-primary" id="step2-next">次へ</button>
+                    </div>
+                </div>
+                
+                <!-- ステップ3: 利用規約 -->
+                <div class="form-step" id="step3">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="register-terms" name="terms" required>
+                        <label for="register-terms"><a href="#">利用規約</a>および<a href="#">プライバシーポリシー</a>に同意します</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="register-newsletter" name="newsletter">
+                        <label for="register-newsletter">最新情報やお得なキャンペーンのメールを受け取る</label>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="btn-prev" id="step3-prev">戻る</button>
+                        <button type="submit" class="btn-primary" id="register-submit-btn">アカウント作成</button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="links">
+                <a href="#" id="show-login-btn">既にアカウントをお持ちの方はこちら</a>
+            </div>
+            
+            <div class="error-message" id="register-error"></div>
+            <div class="success-message" id="register-success"></div>
+        </div>
+    </div>
+
+    <script>
+        // API設定
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // 画面切り替え
+        document.getElementById('show-register-btn').addEventListener('click', function() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'none';
+            document.getElementById('register-screen').style.display = 'block';
+            resetRegisterForm();
+        });
+        
+        document.getElementById('show-login-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('register-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+        });
+        
+        // パスワード復元画面へ
+        document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('register-screen').style.display = 'none';
+            document.getElementById('forgot-password-screen').style.display = 'block';
+        });
+        
+        // ログイン画面に戻る
+        document.getElementById('back-to-login').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('forgot-password-screen').style.display = 'none';
+            document.getElementById('register-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('forgot-password-form').reset();
+            document.getElementById('forgot-error').style.display = 'none';
+            document.getElementById('forgot-success').style.display = 'none';
+        });
+        
+        // ログインフォーム処理
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-btn');
+            
+            // バリデーション
+            if (!email || !password) {
+                showLoginError('メールアドレスとパスワードを入力してください');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showLoginError('有効なメールアドレスを入力してください');
+                return;
+            }
+            
+            // ボタンを無効化
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'ログイン中...<span class="loading"></span>';
+            errorElement.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // ログイン成功
+                    alert('ログインに成功しました!旅行プランサービスへ移動します。');
+                    // 実際のアプリケーションではここでリダイレクト
+                    window.location.href = 'index.html';
+                } else {
+                    showLoginError(data.message || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                showLoginError('サーバーとの通信に失敗しました');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ログイン';
+            }
+        });
+        
+        function showLoginError(message) {
+            const errorElement = document.getElementById('login-error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        // パスワード復元フォーム送信
+        document.getElementById('forgot-password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgot-email').value;
+            const errorElement = document.getElementById('forgot-error');
+            const successElement = document.getElementById('forgot-success');
+            const submitBtn = document.getElementById('forgot-btn');
+            
+            // バリデーション
+            if (!email || !isValidEmail(email)) {
+                errorElement.textContent = '有効なメールアドレスを入力してください';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            // ボタンを無効化
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '送信中...<span class="loading"></span>';
+            errorElement.style.display = 'none';
+            successElement.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successElement.textContent = `パスワード復元メールを ${email} に送信しました。メールをご確認ください。`;
+                    successElement.style.display = 'block';
+                    document.getElementById('forgot-password-form').reset();
+                } else {
+                    errorElement.textContent = data.message || 'パスワード復元リクエストに失敗しました';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('パスワード復元エラー:', error);
+                errorElement.textContent = 'サーバーとの通信に失敗しました';
+                errorElement.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '復元リンクを送信';
+            }
+        });
+        
+        // 新規登録フォームのステップ管理
+        let currentStep = 1;
+        const totalSteps = 3;
+        
+        document.getElementById('step1-next').addEventListener('click', function() {
+            if (validateStep1()) {
+                showStep(2);
+            }
+        });
+        
+        document.getElementById('step2-prev').addEventListener('click', function() {
+            showStep(1);
+        });
+        
+        document.getElementById('step2-next').addEventListener('click', function() {
+            if (validateStep2()) {
+                showStep(3);
+            }
+        });
+        
+        document.getElementById('step3-prev').addEventListener('click', function() {
+            showStep(2);
+        });
+        
+        // 新規登録フォーム送信
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!document.getElementById('register-terms').checked) {
+                showRegisterError('利用規約に同意する必要があります');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('register-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '登録中...<span class="loading"></span>';
+            
+            const formData = {
+                username: document.getElementById('register-username').value,
+                email: document.getElementById('register-email').value,
+                password: document.getElementById('register-password').value,
+                fullname: document.getElementById('register-fullname').value,
+                birthdate: document.getElementById('register-birthdate').value,
+                gender: document.getElementById('register-gender').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('register-success').textContent = data.message;
+                    document.getElementById('register-success').style.display = 'block';
+                    document.getElementById('register-error').style.display = 'none';
+                    
+                    setTimeout(function() {
+                        document.getElementById('register-screen').style.display = 'none';
+                        document.getElementById('login-screen').style.display = 'block';
+                        resetRegisterForm();
+                    }, 2000);
+                } else {
+                    showRegisterError(data.message || '登録に失敗しました');
+                }
+            } catch (error) {
+                console.error('登録エラー:', error);
+                showRegisterError('サーバーとの通信に失敗しました');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'アカウント作成';
+            }
+        });
+        
+        function showStep(step) {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            const progressPercent = (step / totalSteps) * 100;
+            document.getElementById('register-progress-fill').style.width = `${progressPercent}%`;
+            document.getElementById('register-progress-text').textContent = `ステップ ${step}/${totalSteps}`;
+            
+            currentStep = step;
+        }
+        
+        function validateStep1() {
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            if (!username) {
+                showRegisterError('ユーザー名を入力してください');
+                return false;
+            }
+            
+            if (!email || !isValidEmail(email)) {
+                showRegisterError('有効なメールアドレスを入力してください');
+                return false;
+            }
+            
+            if (password.length < 8) {
+                showRegisterError('パスワードは8文字以上で入力してください');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                showRegisterError('パスワードが一致しません');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function validateStep2() {
+            const fullname = document.getElementById('register-fullname').value;
+            const birthdate = document.getElementById('register-birthdate').value;
+            
+            if (!fullname) {
+                showRegisterError('氏名を入力してください');
+                return false;
+            }
+            
+            if (!birthdate) {
+                showRegisterError('生年月日を入力してください');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function showRegisterError(message) {
+            const errorElement = document.getElementById('register-error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function resetRegisterForm() {
+            document.getElementById('register-form').reset();
+            document.getElementById('register-error').style.display = 'none';
+            document.getElementById('register-success').style.display = 'none';
+            showStep(1);
+        }
+    </script>
+</body>
+</html>
