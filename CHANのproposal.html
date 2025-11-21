@@ -6,117 +6,243 @@
     <title>旅行プラン提案</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        .plans-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
-            margin: 30px 0;
-            padding: 0 20px;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        
-        .plan-card {
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .plan-header {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 2px solid #f0f0f0;
-        }
-        
-        .plan-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .plan-emoji {
-            font-size: 4rem;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
             text-align: center;
-            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
-        
-        .plan-title {
-            font-size: 1.5rem;
-            font-weight: bold;
+
+        .plan-header h1 {
             color: #667eea;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        
-        .plan-category {
-            text-align: center;
-            color: #999;
-            font-size: 0.9rem;
+            font-size: 2.5rem;
             margin-bottom: 15px;
         }
-        
-        .plan-description {
+
+        .plan-summary {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+        }
+
+        .summary-item span {
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .tips-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .tips-section h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .tip-item {
+            padding: 10px 0;
             color: #666;
             line-height: 1.6;
-            margin-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
         }
-        
-        .plan-address {
+
+        .tip-item:last-child {
+            border-bottom: none;
+        }
+
+        .day-section {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .day-title {
+            font-size: 1.8rem;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .day-stats {
+            text-align: right;
+            color: #999;
+        }
+
+        .day-stats div {
+            margin-bottom: 5px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+        }
+
+        .activity {
+            position: relative;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .activity:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .activity::before {
+            content: '';
+            position: absolute;
+            left: -38px;
+            top: 25px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border: 4px solid #667eea;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .activity-spot::before {
+            background: #667eea;
+        }
+
+        .activity-travel::before {
+            background: #ffd93d;
+            border-color: #ffd93d;
+        }
+
+        .activity-lunch::before {
+            background: #ff6b9d;
+            border-color: #ff6b9d;
+        }
+
+        .activity-time {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .activity-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .activity-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .activity-address {
             color: #999;
             font-size: 0.9rem;
-            margin-bottom: 15px;
+        }
+
+        .activity-travel {
+            background: #fff9e6;
+        }
+
+        .activity-lunch {
+            background: #ffe6f0;
+        }
+
+        .activity-meta {
             display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .plan-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .plan-tag {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-        }
-        
-        .plan-link {
-            display: inline-block;
-            width: 100%;
-            text-align: center;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: opacity 0.3s;
-        }
-        
-        .plan-link:hover {
-            opacity: 0.9;
-        }
-        
-        .plan-link.disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .no-data {
-            text-align: center;
-            padding: 60px 20px;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
             color: #999;
         }
-        
-        .no-data h2 {
-            font-size: 2rem;
-            margin-bottom: 20px;
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
         }
-        
+
+        .nav-btn {
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
         .loading {
             text-align: center;
             padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
-        
+
         .spinner {
             border: 4px solid rgba(102, 126, 234, 0.3);
             border-top: 4px solid #667eea;
@@ -126,212 +252,235 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .analysis-summary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin: 20px;
+
+        .no-data {
             text-align: center;
-        }
-        
-        .analysis-summary h3 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-        
-        .analysis-categories {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .category-badge {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 15px;
+            padding: 60px 20px;
+            background: white;
             border-radius: 20px;
-            font-size: 0.9rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .no-data h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="screen active">
-            <div class="questionnaire-header">
-                <h1>✨ あなたにおすすめの旅行プラン</h1>
-                <p class="subtitle">回答内容をもとに最適なスポットを提案します</p>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>プランを作成しています...</p>
+        </div>
+        
+        <div id="plan-content" style="display: none;">
+            <!-- ヘッダー -->
+            <div class="plan-header">
+                <h1 id="plan-title">✨ あなたの旅行プラン</h1>
+                <div class="plan-summary" id="plan-summary"></div>
             </div>
-            
-            <div id="analysis-summary" class="analysis-summary" style="display: none;">
-                <h3>📊 あなたの旅行スタイル</h3>
-                <div class="analysis-categories" id="analysis-categories"></div>
+
+            <!-- 旅のアドバイス -->
+            <div class="tips-section" id="tips-section" style="display: none;">
+                <h3>💡 旅のアドバイス</h3>
+                <div id="tips-container"></div>
             </div>
-            
-            <main>
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>プランを読み込んでいます...</p>
-                </div>
-                
-                <div class="plans-container" id="plans-container" style="display: none;">
-                    <!-- JavaScriptでプランを動的に生成 -->
-                </div>
-                
-                <div class="no-data" id="no-data" style="display: none;">
-                    <h2>😞 データが見つかりません</h2>
-                    <p>アンケートに回答してください</p>
-                </div>
-                
-                <div class="navigation-buttons" style="justify-content: center; margin-top: 30px;">
-                    <button class="nav-btn" onclick="location.href='/questionnaire'">
-                        🔄 もう一度診断する
-                    </button>
-                    <button class="nav-btn" onclick="location.href='/'">
-                        🏠 トップに戻る
-                    </button>
-                </div>
-            </main>
+
+            <!-- 日程表 -->
+            <div id="itinerary-container"></div>
+
+            <!-- ナビゲーション -->
+            <div class="navigation-buttons">
+                <button class="nav-btn" onclick="location.href='/questionnaire'">
+                    🔄 もう一度診断する
+                </button>
+                <button class="nav-btn" onclick="location.href='/'">
+                    🏠 トップに戻る
+                </button>
+            </div>
+        </div>
+        
+        <div class="no-data" id="no-data" style="display: none;">
+            <h2>😞 データが見つかりません</h2>
+            <p>アンケートに回答してください</p>
+            <button class="nav-btn" onclick="location.href='/questionnaire'" style="margin-top: 20px;">
+                📝 アンケートに回答する
+            </button>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 proposal.html 読み込み完了');
-            
-            const plansContainer = document.getElementById('plans-container');
+            loadAndDisplayPlan();
+        });
+
+        async function loadAndDisplayPlan() {
             const loading = document.getElementById('loading');
+            const planContent = document.getElementById('plan-content');
             const noData = document.getElementById('no-data');
-            const analysisSummary = document.getElementById('analysis-summary');
-            const analysisCategories = document.getElementById('analysis-categories');
-            
-            // localStorageからデータを取得
+
+            // LocalStorageからデータを取得
+            const planJson = localStorage.getItem('travelPlan');
             const spotsJson = localStorage.getItem('recommendedSpots');
-            const answersJson = localStorage.getItem('answers');
-            const analysisJson = localStorage.getItem('analysis');
             
             console.log('📦 LocalStorage確認:', {
-                spots: !!spotsJson,
-                answers: !!answersJson,
-                analysis: !!analysisJson
+                plan: !!planJson,
+                spots: !!spotsJson
             });
-            
-            if (!spotsJson || !answersJson) {
-                console.log('❌ データなし、アンケートページへ誘導');
+
+            if (!planJson && !spotsJson) {
+                console.log('❌ データなし');
                 loading.style.display = 'none';
                 noData.style.display = 'block';
                 return;
             }
-            
+
             try {
-                const spots = JSON.parse(spotsJson);
-                const answers = JSON.parse(answersJson);
-                const analysis = analysisJson ? JSON.parse(analysisJson) : null;
+                let plan;
                 
-                console.log('✅ データ解析成功:', {
-                    spotsCount: spots.length,
-                    answers: answers,
-                    analysis: analysis
-                });
-                
-                // 分析サマリーを表示
-                if (analysis) {
-                    displayAnalysisSummary(analysis);
+                // 新形式（プラン）がある場合
+                if (planJson) {
+                    plan = JSON.parse(planJson);
+                    console.log('✅ プランデータ取得:', plan);
+                } 
+                // 旧形式（スポットのみ）の場合は簡易プラン生成
+                else if (spotsJson) {
+                    const spots = JSON.parse(spotsJson);
+                    plan = createSimplePlan(spots);
+                    console.log('⚠️ 簡易プラン生成:', plan);
                 }
+
+                // プランを表示
+                displayPlan(plan);
                 
-                // スポットを表示
-                displaySpots(spots);
-                
-                // ローディング非表示、コンテンツ表示
                 loading.style.display = 'none';
-                plansContainer.style.display = 'grid';
-                
+                planContent.style.display = 'block';
+
             } catch (error) {
                 console.error('❌ データ解析エラー:', error);
                 loading.style.display = 'none';
                 noData.style.display = 'block';
             }
-        });
-        
-        function displayAnalysisSummary(analysis) {
-            const analysisSummary = document.getElementById('analysis-summary');
-            const analysisCategories = document.getElementById('analysis-categories');
-            
-            const categoryNames = {
-                'relax': 'リラクゼーション',
-                'nature': '自然・景色',
-                'culture': '文化・歴史',
-                'gourmet': 'グルメ',
-                'activity': 'アクティビティ',
-                'shopping': 'ショッピング'
-            };
-            
-            let html = '';
-            
-            // 主要カテゴリー
-            if (analysis.primary && analysis.primary.length > 0) {
-                analysis.primary.forEach(cat => {
-                    html += `<div class="category-badge">⭐ ${categoryNames[cat] || cat}</div>`;
-                });
-            }
-            
-            // 補助カテゴリー
-            if (analysis.secondary && analysis.secondary.length > 0) {
-                analysis.secondary.forEach(cat => {
-                    html += `<div class="category-badge">${categoryNames[cat] || cat}</div>`;
-                });
-            }
-            
-            analysisCategories.innerHTML = html;
-            analysisSummary.style.display = 'block';
         }
-        
-        function displaySpots(spots) {
-            const plansContainer = document.getElementById('plans-container');
-            
-            if (!spots || spots.length === 0) {
-                plansContainer.innerHTML = '<div class="no-data"><h2>スポットが見つかりませんでした</h2></div>';
-                return;
+
+        function createSimplePlan(spots) {
+            // 旧形式用のフォールバック：スポット一覧から簡易プラン生成
+            return {
+                title: '関西旅行プラン',
+                summary: {
+                    duration_days: 1,
+                    total_spots: spots.length,
+                    total_distance: 0,
+                    budget_level: 'medium',
+                    companion: 'solo'
+                },
+                itineraries: [{
+                    day: 1,
+                    date: new Date().toLocaleDateString('ja-JP'),
+                    activities: spots.map((spot, i) => ({
+                        type: 'spot',
+                        time: `${9 + i}:00`,
+                        duration: 60,
+                        name: `${spot.image || '📍'} ${spot.name}`,
+                        spot_data: spot,
+                        description: spot.description || '',
+                        address: spot.address || ''
+                    })),
+                    end_time: `${9 + spots.length}:00`,
+                    total_distance: 0
+                }],
+                tips: ['各スポットをお楽しみください']
+            };
+        }
+
+        function displayPlan(plan) {
+            // タイトル
+            document.getElementById('plan-title').textContent = plan.title || '✨ あなたの旅行プラン';
+
+            // サマリー
+            const summary = plan.summary || {};
+            const summaryHtml = `
+                <div class="summary-item">
+                    📅 <span>${summary.duration_days || 1}</span> 日間
+                </div>
+                <div class="summary-item">
+                    📍 <span>${summary.total_spots || 0}</span> スポット
+                </div>
+                <div class="summary-item">
+                    🚗 <span>${summary.total_distance || 0}</span> km
+                </div>
+            `;
+            document.getElementById('plan-summary').innerHTML = summaryHtml;
+
+            // 旅のアドバイス
+            if (plan.tips && plan.tips.length > 0) {
+                const tipsHtml = plan.tips.map(tip => 
+                    `<div class="tip-item">${tip}</div>`
+                ).join('');
+                document.getElementById('tips-container').innerHTML = tipsHtml;
+                document.getElementById('tips-section').style.display = 'block';
             }
-            
-            let html = '';
-            
-            spots.forEach(spot => {
-                const tags = spot.tags || [];
-                const tagsHtml = tags.map(tag => `<span class="plan-tag">${tag}</span>`).join('');
-                
-                const hasWebsite = spot.website && spot.website.trim() !== '';
-                const linkClass = hasWebsite ? '' : 'disabled';
-                const linkHref = hasWebsite ? spot.website : '#';
-                const linkTarget = hasWebsite ? '_blank' : '';
-                const linkText = hasWebsite ? '🌐 公式サイトを見る' : '公式サイト情報なし';
-                
-                html += `
-                    <div class="plan-card">
-                        <div class="plan-emoji">${spot.image || '📍'}</div>
-                        <div class="plan-title">${spot.name || '名称不明'}</div>
-                        <div class="plan-category">${spot.category || spot.type || 'その他'}</div>
-                        <div class="plan-description">${spot.description || 'おすすめスポットです'}</div>
-                        <div class="plan-address">
-                            📍 ${spot.address || '住所情報なし'}
+
+            // 日程表
+            const itineraryHtml = plan.itineraries.map(day => 
+                generateDayHtml(day)
+            ).join('');
+            document.getElementById('itinerary-container').innerHTML = itineraryHtml;
+
+            console.log('✅ プラン表示完了');
+        }
+
+        function generateDayHtml(day) {
+            const activitiesHtml = day.activities.map(activity => 
+                generateActivityHtml(activity)
+            ).join('');
+
+            return `
+                <div class="day-section">
+                    <div class="day-header">
+                        <div class="day-title">
+                            ${day.day}日目 - ${day.date}
                         </div>
-                        ${tagsHtml ? `<div class="plan-tags">${tagsHtml}</div>` : ''}
-                        <a href="${linkHref}" class="plan-link ${linkClass}" ${linkTarget ? `target="${linkTarget}"` : ''}>
-                            ${linkText}
-                        </a>
+                        <div class="day-stats">
+                            <div>終了予定: ${day.end_time}</div>
+                            <div>移動距離: ${day.total_distance.toFixed(1)} km</div>
+                        </div>
                     </div>
-                `;
-            });
+                    <div class="timeline">
+                        ${activitiesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateActivityHtml(activity) {
+            const typeClass = `activity-${activity.type}`;
             
-            plansContainer.innerHTML = html;
-            
-            console.log('✅ スポット表示完了:', spots.length);
+            let metaHtml = '';
+            if (activity.duration) {
+                metaHtml += `<div>⏱️ ${activity.duration}分</div>`;
+            }
+            if (activity.distance) {
+                metaHtml += `<div>🚗 ${activity.distance}</div>`;
+            }
+
+            return `
+                <div class="activity ${typeClass}">
+                    <div class="activity-time">${activity.time}</div>
+                    <div class="activity-name">${activity.name}</div>
+                    ${activity.description ? `<div class="activity-description">${activity.description}</div>` : ''}
+                    ${activity.address ? `<div class="activity-address">📍 ${activity.address}</div>` : ''}
+                    ${metaHtml ? `<div class="activity-meta">${metaHtml}</div>` : ''}
+                </div>
+            `;
         }
     </script>
 </body>
