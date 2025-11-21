@@ -305,9 +305,9 @@
             let currentQuestion = 0;
             const totalQuestions = questions.length;
             
-            // フォーム送信処理（★ここが重要）
+            // フォーム送信処理
             form.addEventListener('submit', async function(e) {
-                e.preventDefault(); // デフォルトの送信を防ぐ
+                e.preventDefault();
                 
                 console.log('📝 フォーム送信開始');
                 
@@ -361,12 +361,22 @@
                         throw new Error(data.message || 'スポット取得に失敗しました');
                     }
                     
-                    // スポットデータをlocalStorageに保存
+                    // ★★★ 新形式: プランデータを保存 ★★★
+                    if (data.plan) {
+                        localStorage.setItem('travelPlan', JSON.stringify(data.plan));
+                        console.log('📅 旅行プラン保存:', {
+                            title: data.plan.title,
+                            days: data.plan.itineraries?.length,
+                            totalSpots: data.plan.summary?.total_spots
+                        });
+                    }
+                    
+                    // 旧形式も保存（後方互換性のため）
                     localStorage.setItem('recommendedSpots', JSON.stringify(data.spots));
                     localStorage.setItem('answers', JSON.stringify(answers));
                     localStorage.setItem('analysis', JSON.stringify(data.analysis));
                     
-                    console.log('💾 データ保存完了');
+                    console.log('💾 全データ保存完了');
                     
                     // proposal.htmlに遷移
                     window.location.href = '/proposal';
