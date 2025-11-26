@@ -63,15 +63,27 @@
       align-items: center;
       gap: 10px;
       margin-top: 15px;
+      flex-wrap: wrap;
     }
     
     .search-input {
       padding: 10px 15px;
       border: none;
       border-radius: 8px;
-      width: 300px;
+      width: 250px;
       font-size: 14px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .category-select, .prefecture-select {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      min-width: 180px;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: white;
+      cursor: pointer;
     }
     
     .search-btn {
@@ -85,6 +97,7 @@
       font-weight: bold;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: all 0.3s;
+      white-space: nowrap;
     }
     
     .search-btn:hover {
@@ -102,30 +115,11 @@
       font-size: 14px;
       font-weight: bold;
       transition: all 0.3s;
+      white-space: nowrap;
     }
     
     .clear-btn:hover {
       background: rgba(255,255,255,0.5);
-    }
-    
-    /* カテゴリ検索バー */
-    .category-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    
-    .category-select {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      width: 300px;
-      font-size: 14px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      background: white;
-      cursor: pointer;
     }
     
     .result-info {
@@ -152,7 +146,7 @@
     /* メインコンテンツエリア */
     .main-content {
       display: flex;
-      height: calc(100vh - 200px);
+      height: calc(100vh - 220px);
       position: relative;
     }
     
@@ -351,8 +345,15 @@
         z-index: 1500;
       }
       
-      .search-input {
-        width: 200px;
+      .search-input, .category-select, .prefecture-select {
+        width: 100%;
+        min-width: auto;
+      }
+      
+      .search-container {
+        flex-direction: column;
+        width: 100%;
+        padding: 0 10px;
       }
     }
   </style>
@@ -363,15 +364,10 @@
     <button class="back-btn" onclick="location.href='index.html'">← 戻る</button>
     <h1>経路検索</h1>
     
-    <!-- キーワード検索バー -->
+    <!-- 統合検索UI -->
     <div class="search-container">
       <input type="text" id="search-input" class="search-input" placeholder="スポット名で検索(例:大阪城、京都、寺)">
-      <button class="search-btn" onclick="searchSpots()">🔍 検索</button>
-      <button class="clear-btn" onclick="clearSearch()">クリア</button>
-    </div>
-    
-    <!-- カテゴリ検索バー -->
-    <div class="category-container">
+      
       <select id="category-select" class="category-select">
         <option value="">-- カテゴリを選択 --</option>
         <option value="castle">城</option>
@@ -391,13 +387,25 @@
         <option value="aquarium">水族館</option>
         <option value="viewpoint">展望台</option>
       </select>
-      <button class="search-btn" onclick="searchByCategory()">カテゴリ検索</button>
+      
+      <select id="prefecture-select" class="prefecture-select">
+        <option value="">-- 都道府県を選択 --</option>
+        <option value="osaka">大阪府</option>
+        <option value="kyoto">京都府</option>
+        <option value="hyogo">兵庫県</option>
+        <option value="nara">奈良県</option>
+        <option value="shiga">滋賀県</option>
+        <option value="wakayama">和歌山県</option>
+      </select>
+      
+      <button class="search-btn" onclick="performSearch()">🔍 検索</button>
+      <button class="clear-btn" onclick="clearSearch()">クリア</button>
     </div>
     
     <div class="result-info" id="result-info">検索してスポットを表示</div>
     <div class="loading" id="loading">読み込み中...</div>
   </div>
-  
+
   <!-- メインコンテンツエリア -->
   <div class="main-content">
     <!-- 地図エリア -->
@@ -419,6 +427,8 @@
     var map = L.map('map').setView([34.8, 135.5], 9);
     let markers = [];
     let currentSpot = null;
+    let currentSpotForReview = null;  // ← 追加
+    let selectedRating = 0; 
     
     // OpenStreetMapのタイルレイヤーを追加
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -431,14 +441,58 @@
     const resultInfo = document.getElementById('result-info');
     const searchInput = document.getElementById('search-input');
     const categorySelect = document.getElementById('category-select');
+    const prefectureSelect = document.getElementById('prefecture-select');
     const sidePanel = document.getElementById('side-panel');
     
     // Enterキーで検索
     searchInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        searchSpots();
+        performSearch();
       }
     });
+
+    // 統合検索実行
+    function performSearch() {
+      const keyword = searchInput.value.trim();
+      const category = categorySelect.value;
+      const prefecture = prefectureSelect.value;
+      
+      // 全ての条件が空の場合はアラート
+      if (!keyword && !category && !prefecture) {
+        alert('少なくとも1つの検索条件を入力してください');
+        return;
+      }
+      
+      clearMarkers();
+      loading.classList.add('active');
+      resultInfo.textContent = '検索中...';
+      
+      // URLパラメータを構築
+      const params = new URLSearchParams();
+      if (keyword) params.append('keyword', keyword);
+      if (category) params.append('category', category);
+      if (prefecture) params.append('prefecture', prefecture);
+      
+      fetch(`/api/search-combined?${params.toString()}`)
+        .then(response => response.json())
+        .then(result => {
+          loading.classList.remove('active');
+          
+          if (!result.success) {
+            alert('検索に失敗しました: ' + result.message);
+            resultInfo.textContent = '検索に失敗しました';
+            return;
+          }
+          
+          resultInfo.textContent = `検索結果 (${result.conditions}): ${result.count}件`;
+          displayMarkers(result.spots, 'combined');
+        })
+        .catch(error => {
+          loading.classList.remove('active');
+          console.error('通信エラー:', error);
+          alert('サーバーとの通信に失敗しました');
+        });
+    }
     
     // スポット詳細をサイドパネルに表示
     function showSpotDetail(spot) {
@@ -457,58 +511,72 @@
       `;
       
       sidePanel.classList.add('active');
+      setTimeout(() => {
+    loadSpotReviews(spot.id, `reviews-container-${spot.id}`);
+  }, 100);
     }
     
     // 詳細HTML生成
-    function generateDetailHTML(spot) {
-      let html = '';
-      
-      // 住所
-      if (spot.address) {
-        html += `
-          <div class="detail-section">
-            <div class="detail-section-title">📍 住所</div>
-            <div class="detail-content">${spot.address}</div>
-          </div>
-        `;
-      }
-      
-      // 概要
-      if (spot.description) {
-        html += `
-          <div class="detail-section">
-            <div class="detail-section-title">ℹ️ 概要</div>
-            <div class="detail-description">${spot.description}</div>
-          </div>
-        `;
-      }
-      
-      // 座標
-      html += `
-        <div class="detail-section">
-          <div class="detail-section-title">📌 位置情報</div>
-          <div class="detail-coordinates">
-            緯度: ${spot.lat.toFixed(6)}<br>
-            経度: ${spot.lon.toFixed(6)}
-          </div>
-        </div>
-      `;
-      
-      // ウェブサイト
-      if (spot.website) {
-        html += `
-          <div class="detail-section">
-            <div class="detail-section-title">🌐 公式サイト</div>
-            <a href="${spot.website}" target="_blank" class="detail-link">
-              公式サイトを開く →
-            </a>
-          </div>
-        `;
-      }
-      
-      return html;
-    }
-    
+    // 2. generateDetailHTML関数を修正（355-363行目付近の孤立したコードを関数内に統合）
+function generateDetailHTML(spot) {
+  let html = '';
+  
+  // 住所
+  if (spot.address) {
+    html += `
+      <div class="detail-section">
+        <div class="detail-section-title">📍 住所</div>
+        <div class="detail-content">${spot.address}</div>
+      </div>
+    `;
+  }
+  
+  // 概要
+  if (spot.description) {
+    html += `
+      <div class="detail-section">
+        <div class="detail-section-title">ℹ️ 概要</div>
+        <div class="detail-description">${spot.description}</div>
+      </div>
+    `;
+  }
+  
+  // 座標
+  html += `
+    <div class="detail-section">
+      <div class="detail-section-title">📌 位置情報</div>
+      <div class="detail-coordinates">
+        緯度: ${spot.lat.toFixed(6)}<br>
+        経度: ${spot.lon.toFixed(6)}
+      </div>
+    </div>
+  `;
+  
+  // ウェブサイト
+  if (spot.website) {
+    html += `
+      <div class="detail-section">
+        <div class="detail-section-title">🌐 公式サイト</div>
+        <a href="${spot.website}" target="_blank" class="detail-link">
+          公式サイトを開く →
+        </a>
+      </div>
+    `;
+  }
+  
+  // ★★★ レビューセクションを追加 ★★★
+  html += `
+    <div class="detail-section">
+      <div class="detail-section-title">📝 レビュー</div>
+      <button class="review-btn" onclick='openReviewModal(${JSON.stringify(spot).replace(/'/g, "&apos;")})'>
+        レビューを投稿する
+      </button>
+      <div id="reviews-container-${spot.id}" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  return html;
+}
     // サイドパネルを閉じる
     function closeSidePanel() {
       sidePanel.classList.remove('active');
@@ -568,7 +636,11 @@
     // マーカー表示
     function displayMarkers(spots, searchType) {
       if (spots.length === 0) {
-        alert('該当するスポットが見つかりませんでした');
+        // 検索タイプに応じたメッセージ
+        if (searchType === 'combined') {
+          alert('該当するスポットが見つかりませんでした');
+        }
+        // searchType === 'overpass' の場合は何もしない（初回読み込みなので）
         return;
       }
       
@@ -601,78 +673,11 @@
       }
     }
     
-    // キーワード検索実行
-    function searchSpots() {
-      const query = searchInput.value.trim();
-      
-      if (!query) {
-        alert('検索キーワードを入力してください');
-        return;
-      }
-      
-      clearMarkers();
-      loading.classList.add('active');
-      resultInfo.textContent = '検索中...';
-      
-      fetch(`/api/search-spots?query=${encodeURIComponent(query)}`)
-        .then(response => response.json())
-        .then(result => {
-          loading.classList.remove('active');
-          
-          if (!result.success) {
-            alert('検索に失敗しました: ' + result.message);
-            resultInfo.textContent = '検索に失敗しました';
-            return;
-          }
-          
-          resultInfo.textContent = `「${result.query}」の検索結果: ${result.count}件`;
-          displayMarkers(result.spots, 'keyword');
-        })
-        .catch(error => {
-          loading.classList.remove('active');
-          console.error('通信エラー:', error);
-          alert('サーバーとの通信に失敗しました');
-        });
-    }
-    
-    // カテゴリ検索実行
-    function searchByCategory() {
-      const category = categorySelect.value;
-      
-      if (!category) {
-        alert('カテゴリを選択してください');
-        return;
-      }
-      
-      clearMarkers();
-      loading.classList.add('active');
-      resultInfo.textContent = 'カテゴリ検索中...';
-      
-      fetch(`/api/search-by-category?category=${encodeURIComponent(category)}`)
-        .then(response => response.json())
-        .then(result => {
-          loading.classList.remove('active');
-          
-          if (!result.success) {
-            alert('検索に失敗しました: ' + result.message);
-            resultInfo.textContent = '検索に失敗しました';
-            return;
-          }
-          
-          resultInfo.textContent = `カテゴリ「${result.category_name}」の検索結果: ${result.count}件`;
-          displayMarkers(result.spots, 'category');
-        })
-        .catch(error => {
-          loading.classList.remove('active');
-          console.error('通信エラー:', error);
-          alert('サーバーとの通信に失敗しました');
-        });
-    }
-    
     // 検索クリア
     function clearSearch() {
       searchInput.value = '';
       categorySelect.value = '';
+      prefectureSelect.value = '';
       clearMarkers();
       closeSidePanel();
       resultInfo.textContent = '検索してスポットを表示';
@@ -692,15 +697,383 @@
             resultInfo.textContent = `観光スポットを読み込みました (${result.count}件)`;
             displayMarkers(result.spots, 'overpass');
           } else {
-            alert(result.message);
             resultInfo.textContent = 'スポットの取得に失敗しました';
           }
         })
         .catch(error => {
           loading.classList.remove('active');
           console.error('通信エラー:', error);
-          alert('サーバーとの通信に失敗しました');
+          resultInfo.textContent = 'サーバーとの通信に失敗しました';
         });
+
+
+
+      html +=`
+        <div class="detail-section">
+          <div class="detail-section-title"> レビュー</div>
+          <button class="review-btn" id="review-btn-${spot.id}">
+            レビューを投稿する
+          </button>
+          <div id="reviews-container-${spot.id}" style="margin-top: 20px;"></div>
+        </div>
+      `;
+
+
+
+  //　　　　レビュー機能
+    //セーフなレビューモーダル開く関数追記11/14
+    function openReviewModalSafe(id,name,lat,lon,type) {
+      const spot  = {
+        id: id,
+        name: name,
+        lat: lat,
+        lon: lon,
+        type: type
+      };
+      openReviewModal(spot);
+    }
+//2025/11/18新しく変更し、追加
+        // レビューモーダルを開く
+// ログイン状態を確認する関数（追加）
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('/api/check-login', {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    return data.logged_in;
+  } catch (error) {
+    console.error('ログイン状態確認エラー:', error);
+    return false;
+  }
+}
+
+// レビューモーダルを開く 2025/11/22ほとんど変更
+async function openReviewModal(spot) {
+  console.log('📝 レビューモーダル開く - 受け取ったspot:', spot);
+ 
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  // ★★★ spotの検証を追加 ★★★
+  if (!spot || !spot.id || !spot.name) {
+    console.error('❌ エラー: スポット情報が不正です', spot);
+    alert('スポット情報が取得できませんでした。ページを再読み込みしてください。');
+    return;
+  }
+
+  // ログインチェック
+  const isLoggedIn = await checkLoginStatus();
+  console.log('ログインチェック結果:', isLoggedIn);
+ 
+  if (!isLoggedIn) {
+    console.warn('⚠️ 未ログイン状態');
+    if (confirm('レビューを投稿するにはログインが必要です。\nログインページに移動しますか？')) {
+      window.location.href = 'login.html?redirect=map.html';
+    }
+    return;
+  }
+
+  //  ここでcurrentSpotForReviewを設定（重要！）
+  currentSpotForReview = spot;
+  selectedRating = 0;
+ 
+  console.log('✅ currentSpotForReviewを設定:', currentSpotForReview);
+ 
+  const today = new Date().toISOString().split('T')[0];
+ 
+  const modalHTML = `
+    <div class="review-modal" id="review-modal">
+      <div class="review-modal-content">
+        <div class="review-modal-header">
+          <div class="review-modal-title">レビューを投稿</div>
+          <button class="review-modal-close" onclick="closeReviewModal()">×</button>
+        </div>
+       
+        <div class="review-form">
+          <div class="review-form-group">
+            <label>スポット名</label>
+            <input type="text" value="${spot.name}" disabled style="background: #f0f0f0;">
+          </div>
+         
+          <div class="star-rating">
+            <label>評価 <span style="color: #ff6b6b;">*</span></label>
+            <div class="stars" id="star-rating">
+              <span class="star" data-rating="1">★</span>
+              <span class="star" data-rating="2">★</span>
+              <span class="star" data-rating="3">★</span>
+              <span class="star" data-rating="4">★</span>
+              <span class="star" data-rating="5">★</span>
+            </div>
+            <div id="rating-display" style="margin-top: 5px; color: #666; font-size: 14px;">
+              評価を選択してください
+            </div>
+          </div>
+         
+          <div class="review-form-group">
+            <label>訪問日</label>
+            <input type="date" id="visit-date" max="${today}">
+          </div>
+         
+          <div class="review-form-group">
+            <label>コメント（任意）</label>
+            <textarea id="review-comment" placeholder="感想を書いてください..." rows="4"></textarea>
+          </div>
+         
+          <button class="review-submit-btn" onclick="submitReview()" id="submit-review-btn">
+            レビューを投稿
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+ 
+  // 既存のモーダルを削除
+  const existingModal = document.getElementById('review-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+ 
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+ 
+  setTimeout(() => {
+    document.getElementById('review-modal').classList.add('active');
+    setupStarRating();
+  }, 10);
+}
+
+// 星評価の設定（強化版）
+function setupStarRating() {
+  const stars = document.querySelectorAll('.star');
+  const ratingDisplay = document.getElementById('rating-display');
+ 
+  if (!stars || stars.length === 0) {
+    console.error('❌ 星要素が見つかりません');
+    return;
+  }
+ 
+  stars.forEach(star => {
+    star.addEventListener('click', function() {
+      selectedRating = parseInt(this.dataset.rating);
+      updateStars(selectedRating);
+     
+      const ratingTexts = ['', '★☆☆☆☆ 残念', '★★☆☆☆ イマイチ', '★★★☆☆ 普通', '★★★★☆ 良い', '★★★★★ 最高'];
+      if (ratingDisplay) {
+        ratingDisplay.textContent = ratingTexts[selectedRating] || '評価を選択してください';
+        ratingDisplay.style.color = '#ff6b6b';
+      }
+     
+      console.log('⭐ 評価選択:', selectedRating);
+    });
+   
+    star.addEventListener('mouseenter', function() {
+      const rating = parseInt(this.dataset.rating);
+      updateStars(rating);
+    });
+  });
+ 
+  const starContainer = document.getElementById('star-rating');
+  if (starContainer) {
+    starContainer.addEventListener('mouseleave', function() {
+      updateStars(selectedRating);
+    });
+  }
+}
+
+function updateStars(rating) {
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.classList.add('active');
+    } else {
+      star.classList.remove('active');
+    }
+  });
+}
+
+// レビューモーダルを閉じる
+function closeReviewModal() {
+  const modal = document.getElementById('review-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => modal.remove(), 300);
+  }
+  currentSpotForReview = null;
+  selectedRating = 0;
+  console.log('🔒 レビューモーダルを閉じました');
+} //ここまで
+   
+    // レビューを投稿 2025/11/22変更
+async function submitReview() {
+    console.log('\n' + '='.repeat(60));
+    console.log('📤 レビュー投稿開始');
+    console.log('='.repeat(60));
+   
+    console.log('現在のスポット:', currentSpotForReview);
+    console.log('選択された評価:', selectedRating);
+    console.log('Cookie:', document.cookie);
+   
+    if (!currentSpotForReview) {
+        alert('スポット情報が取得できませんでした');
+        return;
+    }
+   
+    if (selectedRating === 0) {
+        alert('評価を選択してください');
+        return;
+    }
+   
+    // ★★★ 投稿前にログイン確認 ★★★
+    const isLoggedIn = await checkLoginStatus();
+    console.log('投稿前ログイン確認:', isLoggedIn);
+   
+    if (!isLoggedIn) {
+        alert('セッションが切れています。ページを再読み込みしてログインし直してください。');
+        window.location.reload();
+        return;
+    }
+   
+    const visitDate = document.getElementById('visit-date').value || null;
+    const comment = document.getElementById('review-comment').value.trim();
+   
+    const reviewData = {
+        osm_id: parseInt(currentSpotForReview.id),
+        osm_type: 'node',
+        spot_name: currentSpotForReview.name,
+        spot_lat: parseFloat(currentSpotForReview.lat),
+        spot_lon: parseFloat(currentSpotForReview.lon),
+        spot_type: currentSpotForReview.type || 'その他',
+        rating: parseInt(selectedRating),
+        comment: comment,
+        visit_date: visitDate
+    };
+   
+    console.log('送信データ:', JSON.stringify(reviewData, null, 2));
+   
+    const submitBtn = document.querySelector('.review-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '投稿中...';
+   
+    try {
+        console.log('🔄 APIリクエスト送信: POST /api/reviews');
+       
+        const response = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',  // ★★★ 最重要！★★★
+            body: JSON.stringify(reviewData)
+        });
+       
+        console.log('レスポンスステータス:', response.status);
+        console.log('レスポンスヘッダー:', [...response.headers.entries()]);
+       
+        const result = await response.json();
+        console.log('レスポンスデータ:', result);
+       
+        if (response.status === 401) {
+            console.error('❌ 401 Unauthorized - セッションエラー');
+            alert('セッションが切れています。\nページを再読み込みしてログインし直してください。');
+            closeReviewModal();
+            setTimeout(() => window.location.reload(), 1000);
+            return;
+        }
+       
+        if (result.success) {
+            console.log('✅ レビュー投稿成功');
+            alert('レビューを投稿しました！');
+            closeReviewModal();
+           
+            // スポット詳細を再読み込み
+            if (currentSpot && currentSpot.id === currentSpotForReview.id) {
+                showSpotDetail(currentSpot);
+            }
+        } else {
+            console.error('❌ レビュー投稿失敗:', result.message);
+            alert(result.message || 'レビューの投稿に失敗しました');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'レビューを投稿';
+        }
+    } catch (error) {
+        console.error('❌ レビュー投稿エラー:', error);
+        alert('サーバーとの通信に失敗しました');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'レビューを投稿';
+    }
+   
+    console.log('='.repeat(60));
+}//変更
+   
+    // スポットのレビュー一覧を取得
+    function loadSpotReviews(spotId, containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+     
+      container.innerHTML = '<div class="review-loading">レビューを読み込み中...</div>';
+     
+      fetch(`/api/reviews/spot/${spotId}`, {
+        credentials: 'include' //追記11/16
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            displayReviews(result, container);
+          } else {
+            container.innerHTML = '<div class="no-reviews">レビューの読み込みに失敗しました</div>';
+          }
+        })
+        .catch(error => {
+          console.error('レビュー取得エラー:', error);
+          container.innerHTML = '<div class="no-reviews">レビューの読み込みに失敗しました</div>';
+        });
+    }
+   
+    // レビューを表示
+    function displayReviews(data, container) {
+      let html = '';
+     
+      if (data.count > 0) {
+        const stars = '★'.repeat(Math.round(data.average_rating)) + '☆'.repeat(5 - Math.round(data.average_rating));
+        html += `
+          <div class="average-rating">
+            <span class="rating-number">${data.average_rating}</span>
+            <span class="rating-stars">${stars}</span>
+            <span class="rating-count">(${data.count}件)</span>
+          </div>
+        `;
+      }
+     
+      html += '<div class="reviews-section-title">📝 レビュー一覧</div>';
+      html += '<div class="reviews-list">';
+     
+      if (data.reviews.length === 0) {
+        html += '<div class="no-reviews">まだレビューがありません。最初のレビューを投稿してみませんか？</div>';
+      } else {
+        data.reviews.forEach(review => {
+          const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+          const date = new Date(review.created_at).toLocaleDateString('ja-JP');
+          const visitDate = review.visit_date ? new Date(review.visit_date).toLocaleDateString('ja-JP') : null;
+         
+          html += `
+            <div class="review-item">
+              <div class="review-header">
+                <span class="review-user">${review.user_name || '匿名ユーザー'}</span>
+                <span class="review-date">${date}</span>
+              </div>
+              <div class="review-stars">${stars}</div>
+              ${review.comment ? `<div class="review-comment">${review.comment}</div>` : ''}
+              ${visitDate ? `<div class="review-visit-date">訪問日: ${visitDate}</div>` : ''}
+            </div>
+          `;
+        });
+      }
+     
+      html += '</div>';
+      container.innerHTML = html;
+    }
     }
 
     // ページ読み込み時に自動でOverpassスポットを取得
