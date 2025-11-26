@@ -131,13 +131,14 @@ function showSpotDetail(spot) {
   
   sidePanel.classList.add('active');
 
-  // レビューボタンイベントリスナー設定（修正）
+  // レビューボタンイベントリスナー設定
     setTimeout(() => {
       const reviewBtn = document.getElementById(`review-btn-${spot.id}`);
       if (reviewBtn) {
         reviewBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
+          console.log('レビューボタンクリック:', spot); //追記11/22
           openReviewModal(spot);
         });
       }
@@ -237,7 +238,7 @@ function showSpotDetail(spot) {
     }
 //2025/11/18新しく変更し、追加
         // レビューモーダルを開く 
-// ログイン状態を確認する関数（新規追加）
+// ログイン状態を確認する関数（追加）
 async function checkLoginStatus() {
   try {
     const response = await fetch('/api/check-login', {
@@ -251,25 +252,41 @@ async function checkLoginStatus() {
   }
 }
 
-// レビューモーダルを開く（修正版）
+// レビューモーダルを開く 2025/11/22ほとんど変更
 async function openReviewModal(spot) {
+  console.log('📝 レビューモーダル開く - 受け取ったspot:', spot);
+  
   if (event) {
     event.stopPropagation();
+    event.preventDefault();
   }
 
-  // ★★★ ログインチェック ★★★
+  // ★★★ spotの検証を追加 ★★★
+  if (!spot || !spot.id || !spot.name) {
+    console.error('❌ エラー: スポット情報が不正です', spot);
+    alert('スポット情報が取得できませんでした。ページを再読み込みしてください。');
+    return;
+  }
+
+  // ログインチェック
   const isLoggedIn = await checkLoginStatus();
+  console.log('ログインチェック結果:', isLoggedIn);
   
   if (!isLoggedIn) {
+    console.warn('⚠️ 未ログイン状態');
     if (confirm('レビューを投稿するにはログインが必要です。\nログインページに移動しますか？')) {
       window.location.href = 'login.html?redirect=map.html';
     }
     return;
   }
 
-  // ログイン済みの場合は通常通りモーダルを開く
+  //  ここでcurrentSpotForReviewを設定（重要！）
   currentSpotForReview = spot;
   selectedRating = 0;
+  
+  console.log('✅ currentSpotForReviewを設定:', currentSpotForReview);
+  
+  const today = new Date().toISOString().split('T')[0];
   
   const modalHTML = `
     <div class="review-modal" id="review-modal">
@@ -294,24 +311,30 @@ async function openReviewModal(spot) {
               <span class="star" data-rating="4">★</span>
               <span class="star" data-rating="5">★</span>
             </div>
+            <div id="rating-display" style="margin-top: 5px; color: #666; font-size: 14px;">
+              評価を選択してください
+            </div>
           </div>
           
           <div class="review-form-group">
             <label>訪問日</label>
-            <input type="date" id="visit-date" max="${new Date().toISOString().split('T')[0]}">
+            <input type="date" id="visit-date" max="${today}">
           </div>
           
           <div class="review-form-group">
             <label>コメント（任意）</label>
-            <textarea id="review-comment" placeholder="感想を書いてください..."></textarea>
+            <textarea id="review-comment" placeholder="感想を書いてください..." rows="4"></textarea>
           </div>
           
-          <button class="review-submit-btn" onclick="submitReview()">レビューを投稿</button>
+          <button class="review-submit-btn" onclick="submitReview()" id="submit-review-btn">
+            レビューを投稿
+          </button>
         </div>
       </div>
     </div>
   `;
   
+  // 既存のモーダルを削除
   const existingModal = document.getElementById('review-modal');
   if (existingModal) {
     existingModal.remove();
@@ -321,110 +344,172 @@ async function openReviewModal(spot) {
   
   setTimeout(() => {
     document.getElementById('review-modal').classList.add('active');
+    setupStarRating();
   }, 10);
-  
-  setupStarRating();
 }
-    
-    // 星評価の設定
-    function setupStarRating() {
-      const stars = document.querySelectorAll('.star');
+
+// 星評価の設定（強化版）
+function setupStarRating() {
+  const stars = document.querySelectorAll('.star');
+  const ratingDisplay = document.getElementById('rating-display');
+  
+  if (!stars || stars.length === 0) {
+    console.error('❌ 星要素が見つかりません');
+    return;
+  }
+  
+  stars.forEach(star => {
+    star.addEventListener('click', function() {
+      selectedRating = parseInt(this.dataset.rating);
+      updateStars(selectedRating);
       
-      stars.forEach(star => {
-        star.addEventListener('click', function() {
-          selectedRating = parseInt(this.dataset.rating);
-          updateStars(selectedRating);
-        });
-        
-        star.addEventListener('mouseenter', function() {
-          const rating = parseInt(this.dataset.rating);
-          updateStars(rating);
-        });
-      });
-      
-      document.getElementById('star-rating').addEventListener('mouseleave', function() {
-        updateStars(selectedRating);
-      });
-    }
-    
-    function updateStars(rating) {
-      const stars = document.querySelectorAll('.star');
-      stars.forEach((star, index) => {
-        if (index < rating) {
-          star.classList.add('active');
-        } else {
-          star.classList.remove('active');
-        }
-      });
-    }
-    
-    // レビューモーダルを閉じる
-    function closeReviewModal() {
-      const modal = document.getElementById('review-modal');
-      if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
+      const ratingTexts = ['', '★☆☆☆☆ 残念', '★★☆☆☆ イマイチ', '★★★☆☆ 普通', '★★★★☆ 良い', '★★★★★ 最高'];
+      if (ratingDisplay) {
+        ratingDisplay.textContent = ratingTexts[selectedRating] || '評価を選択してください';
+        ratingDisplay.style.color = '#ff6b6b';
       }
-      currentSpotForReview = null;
-      selectedRating = 0;
-    }
+      
+      console.log('⭐ 評価選択:', selectedRating);
+    });
     
-    // レビューを投稿
-    function submitReview() {
-      if (!currentSpotForReview) {
+    star.addEventListener('mouseenter', function() {
+      const rating = parseInt(this.dataset.rating);
+      updateStars(rating);
+    });
+  });
+  
+  const starContainer = document.getElementById('star-rating');
+  if (starContainer) {
+    starContainer.addEventListener('mouseleave', function() {
+      updateStars(selectedRating);
+    });
+  }
+}
+
+function updateStars(rating) {
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.classList.add('active');
+    } else {
+      star.classList.remove('active');
+    }
+  });
+}
+
+// レビューモーダルを閉じる
+function closeReviewModal() {
+  const modal = document.getElementById('review-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => modal.remove(), 300);
+  }
+  currentSpotForReview = null;
+  selectedRating = 0;
+  console.log('🔒 レビューモーダルを閉じました');
+} //ここまで
+    
+    // レビューを投稿 2025/11/22変更
+async function submitReview() {
+    console.log('\n' + '='.repeat(60));
+    console.log('📤 レビュー投稿開始');
+    console.log('='.repeat(60));
+    
+    console.log('現在のスポット:', currentSpotForReview);
+    console.log('選択された評価:', selectedRating);
+    console.log('Cookie:', document.cookie);
+    
+    if (!currentSpotForReview) {
         alert('スポット情報が取得できませんでした');
         return;
-      }
-      
-      if (selectedRating === 0) {
+    }
+    
+    if (selectedRating === 0) {
         alert('評価を選択してください');
         return;
-      }
-      
-      const visitDate = document.getElementById('visit-date').value;
-      const comment = document.getElementById('review-comment').value.trim();
-      
-      const reviewData = {
-        osm_id: currentSpotForReview.id,
+    }
+    
+    // ★★★ 投稿前にログイン確認 ★★★
+    const isLoggedIn = await checkLoginStatus();
+    console.log('投稿前ログイン確認:', isLoggedIn);
+    
+    if (!isLoggedIn) {
+        alert('セッションが切れています。ページを再読み込みしてログインし直してください。');
+        window.location.reload();
+        return;
+    }
+    
+    const visitDate = document.getElementById('visit-date').value || null;
+    const comment = document.getElementById('review-comment').value.trim();
+    
+    const reviewData = {
+        osm_id: parseInt(currentSpotForReview.id),
         osm_type: 'node',
         spot_name: currentSpotForReview.name,
-        spot_lat: currentSpotForReview.lat,
-        spot_lon: currentSpotForReview.lon,
+        spot_lat: parseFloat(currentSpotForReview.lat),
+        spot_lon: parseFloat(currentSpotForReview.lon),
         spot_type: currentSpotForReview.type || 'その他',
-        rating: selectedRating,
+        rating: parseInt(selectedRating),
         comment: comment,
-        visit_date: visitDate || null
-      };
-      
-      const submitBtn = document.querySelector('.review-submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = '投稿中...';
-      
-      fetch('/api/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', //追記11/16
-        body: JSON.stringify(reviewData)
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          alert('レビューを投稿しました！');
-          closeReviewModal();
-          showSpotDetail(currentSpotForReview);
-        } else {
-          alert(result.message || 'レビューの投稿に失敗しました');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'レビューを投稿';
+        visit_date: visitDate
+    };
+    
+    console.log('送信データ:', JSON.stringify(reviewData, null, 2));
+    
+    const submitBtn = document.querySelector('.review-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '投稿中...';
+    
+    try {
+        console.log('🔄 APIリクエスト送信: POST /api/reviews');
+        
+        const response = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',  // ★★★ 最重要！★★★
+            body: JSON.stringify(reviewData)
+        });
+        
+        console.log('レスポンスステータス:', response.status);
+        console.log('レスポンスヘッダー:', [...response.headers.entries()]);
+        
+        const result = await response.json();
+        console.log('レスポンスデータ:', result);
+        
+        if (response.status === 401) {
+            console.error('❌ 401 Unauthorized - セッションエラー');
+            alert('セッションが切れています。\nページを再読み込みしてログインし直してください。');
+            closeReviewModal();
+            setTimeout(() => window.location.reload(), 1000);
+            return;
         }
-      })
-      .catch(error => {
-        console.error('レビュー投稿エラー:', error);
+        
+        if (result.success) {
+            console.log('✅ レビュー投稿成功');
+            alert('レビューを投稿しました！');
+            closeReviewModal();
+            
+            // スポット詳細を再読み込み
+            if (currentSpot && currentSpot.id === currentSpotForReview.id) {
+                showSpotDetail(currentSpot);
+            }
+        } else {
+            console.error('❌ レビュー投稿失敗:', result.message);
+            alert(result.message || 'レビューの投稿に失敗しました');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'レビューを投稿';
+        }
+    } catch (error) {
+        console.error('❌ レビュー投稿エラー:', error);
         alert('サーバーとの通信に失敗しました');
         submitBtn.disabled = false;
         submitBtn.textContent = 'レビューを投稿';
-      });
     }
+    
+    console.log('='.repeat(60));
+}//変更
     
     // スポットのレビュー一覧を取得
     function loadSpotReviews(spotId, containerId) {
